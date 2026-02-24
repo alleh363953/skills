@@ -1,0 +1,2829 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: command-development
+- **路徑**: plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\command-development
+
+## 2. 檔案結構 (File Tree)
+```text
+    README.md
+    SKILL.md
+    examples/
+        plugin-commands.md
+        simple-commands.md
+    references/
+        advanced-workflows.md
+        documentation-patterns.md
+        frontmatter-reference.md
+        interactive-commands.md
+        marketplace-considerations.md
+        plugin-features-reference.md
+        testing-strategies.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- https://community.example.com
+- https://docs.example.com
+- https://git-scm.com/downloads
+- https://github.com/user/plugin/issues
+- https://nodejs.org/
+- https://releases.example.com/v$LATEST_VERSION
+- https://stedolan.github.io/jq/download/
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: command-development
+description: This skill should be used when the user asks to "create a slash command", "add a command", "write a custom command", "define command arguments", "use command frontmatter", "organize commands", "create command with file references", "interactive command", "use AskUserQuestion in command", or needs guidance on slash command structure, YAML frontmatter fields, dynamic arguments, bash execution in commands, user interaction patterns, or command development best practices for Claude Code.
+version: 0.2.0
+---
+
+# Command Development for Claude Code
+
+## Overview
+
+Slash commands are frequently-used prompts defined as Markdown files that Claude executes during interactive sessions. Understanding command structure, frontmatter options, and dynamic features enables creating powerful, reusable workflows.
+
+**Key concepts:**
+- Markdown file format for commands
+- YAML frontmatter for configuration
+- Dynamic arguments and file references
+- Bash execution for context
+- Command organization and namespacing
+
+## Command Basics
+
+### What is a Slash Command?
+
+A slash command is a Markdown file containing a prompt that Claude executes when invoked. Commands provide:
+- **Reusability**: Define once, use repeatedly
+- **Consistency**: Standardize common workflows
+- **Sharing**: Distribute across team or projects
+- **Efficiency**: Quick access to complex prompts
+
+### Critical: Commands are Instructions FOR Claude
+
+**Commands are written for agent consumption, not human consumption.**
+
+When a user invokes `/command-name`, the command content becomes Claude's instructions. Write commands as directives TO Claude about what to do, not as messages TO the user.
+
+**Correct approach (instructions for Claude):**
+```markdown
+Review this code for security vulnerabilities including:
+- SQL injection
+- XSS attacks
+- Authentication issues
+
+Provide specific line numbers and severity ratings.
+```
+
+**Incorrect approach (messages to user):**
+```markdown
+This command will review your code for security issues.
+You'll receive a report with vulnerability details.
+```
+
+The first example tells Claude what to do. The second tells the user what will happen but doesn't instruct Claude. Always use the first approach.
+
+### Command Locations
+
+**Project commands** (shared with team):
+- Location: `.claude/commands/`
+- Scope: Available in specific project
+- Label: Shown as "(project)" in `/help`
+- Use for: Team workflows, project-specific tasks
+
+**Personal commands** (available everywhere):
+- Location: `~/.claude/commands/`
+- Scope: Available in all projects
+- Label: Shown as "(user)" in `/help`
+- Use for: Personal workflows, cross-project utilities
+
+**Plugin commands** (bundled with plugins):
+- Location: `plugin-name/commands/`
+- Scope: Available when plugin installed
+- Label: Shown as "(plugin-name)" in `/help`
+- Use for: Plugin-specific functionality
+
+## File Format
+
+### Basic Structure
+
+Commands are Markdown files with `.md` extension:
+
+```
+.claude/commands/
+├── review.md           # /review command
+├── test.md             # /test command
+└── deploy.md           # /deploy command
+```
+
+**Simple command:**
+```markdown
+Review this code for security vulnerabilities including:
+- SQL injection
+- XSS attacks
+- Authentication bypass
+- Insecure data handling
+```
+
+No frontmatter needed for basic commands.
+
+### With YAML Frontmatter
+
+Add configuration using YAML frontmatter:
+
+```markdown
+---
+description: Review code for security issues
+allowed-tools: Read, Grep, Bash(git:*)
+model: sonnet
+---
+
+Review this code for security vulnerabilities...
+```
+
+## YAML Frontmatter Fields
+
+### description
+
+**Purpose:** Brief description shown in `/help`
+**Type:** String
+**Default:** First line of command prompt
+
+```yaml
+---
+description: Review pull request for code quality
+---
+```
+
+**Best practice:** Clear, actionable description (under 60 characters)
+
+### allowed-tools
+
+**Purpose:** Specify which tools command can use
+**Type:** String or Array
+**Default:** Inherits from conversation
+
+```yaml
+---
+allowed-tools: Read, Write, Edit, Bash(git:*)
+---
+```
+
+**Patterns:**
+- `Read, Write, Edit` - Specific tools
+- `Bash(git:*)` - Bash with git commands only
+- `*` - All tools (rarely needed)
+
+**Use when:** Command requires specific tool access
+
+### model
+
+**Purpose:** Specify model for command execution
+**Type:** String (sonnet, opus, haiku)
+**Default:** Inherits from conversation
+
+```yaml
+---
+model: haiku
+---
+```
+
+**Use cases:**
+- `haiku` - Fast, simple commands
+- `sonnet` - Standard workflows
+- `opus` - Complex analysis
+
+### argument-hint
+
+**Purpose:** Document expected arguments for autocomplete
+**Type:** String
+**Default:** None
+
+```yaml
+---
+argument-hint: [pr-number] [priority] [assignee]
+---
+```
+
+**Benefits:**
+- Helps users understand command arguments
+- Improves command discovery
+- Documents command interface
+
+### disable-model-invocation
+
+**Purpose:** Prevent SlashCommand tool from programmatically calling command
+**Type:** Boolean
+**Default:** false
+
+```yaml
+---
+disable-model-invocation: true
+---
+```
+
+**Use when:** Command should only be manually invoked
+
+## Dynamic Arguments
+
+### Using $ARGUMENTS
+
+Capture all arguments as single string:
+
+```markdown
+---
+description: Fix issue by number
+argument-hint: [issue-number]
+---
+
+Fix issue #$ARGUMENTS following our coding standards and best practices.
+```
+
+**Usage:**
+```
+> /fix-issue 123
+> /fix-issue 456
+```
+
+**Expands to:**
+```
+Fix issue #123 following our coding standards...
+Fix issue #456 following our coding standards...
+```
+
+### Using Positional Arguments
+
+Capture individual arguments with `$1`, `$2`, `$3`, etc.:
+
+```markdown
+---
+description: Review PR with priority and assignee
+argument-hint: [pr-number] [priority] [assignee]
+---
+
+Review pull request #$1 with priority level $2.
+After review, assign to $3 for follow-up.
+```
+
+**Usage:**
+```
+> /review-pr 123 high alice
+```
+
+**Expands to:**
+```
+Review pull request #123 with priority level high.
+After review, assign to alice for follow-up.
+```
+
+### Combining Arguments
+
+Mix positional and remaining arguments:
+
+```markdown
+Deploy $1 to $2 environment with options: $3
+```
+
+**Usage:**
+```
+> /deploy api staging --force --skip-tests
+```
+
+**Expands to:**
+```
+Deploy api to staging environment with options: --force --skip-tests
+```
+
+## File References
+
+### Using @ Syntax
+
+Include file contents in command:
+
+```markdown
+---
+description: Review specific file
+argument-hint: [file-path]
+---
+
+Review @$1 for:
+- Code quality
+- Best practices
+- Potential bugs
+```
+
+**Usage:**
+```
+> /review-file src/api/users.ts
+```
+
+**Effect:** Claude reads `src/api/users.ts` before processing command
+
+### Multiple File References
+
+Reference multiple files:
+
+```markdown
+Compare @src/old-version.js with @src/new-version.js
+
+Identify:
+- Breaking changes
+- New features
+- Bug fixes
+```
+
+### Static File References
+
+Reference known files without arguments:
+
+```markdown
+Review @package.json and @tsconfig.json for consistency
+
+Ensure:
+- TypeScript version matches
+- Dependencies are aligned
+- Build configuration is correct
+```
+
+## Bash Execution in Commands
+
+Commands can execute bash commands inline to dynamically gather context before Claude processes the command. This is useful for including repository state, environment information, or project-specific context.
+
+**When to use:**
+- Include dynamic context (git status, environment vars, etc.)
+- Gather project/repository state
+- Build context-aware workflows
+
+**Implementation details:**
+For complete syntax, examples, and best practices, see `references/plugin-features-reference.md` section on bash execution. The reference includes the exact syntax and multiple working examples to avoid execution issues
+
+## Command Organization
+
+### Flat Structure
+
+Simple organization for small command sets:
+
+```
+.claude/commands/
+├── build.md
+├── test.md
+├── deploy.md
+├── review.md
+└── docs.md
+```
+
+**Use when:** 5-15 commands, no clear categories
+
+### Namespaced Structure
+
+Organize commands in subdirectories:
+
+```
+.claude/commands/
+├── ci/
+│   ├── build.md        # /build (project:ci)
+│   ├── test.md         # /test (project:ci)
+│   └── lint.md         # /lint (project:ci)
+├── git/
+│   ├── commit.md       # /commit (project:git)
+│   └── pr.md           # /pr (project:git)
+└── docs/
+    ├── generate.md     # /generate (project:docs)
+    └── publish.md      # /publish (project:docs)
+```
+
+**Benefits:**
+- Logical grouping by category
+- Namespace shown in `/help`
+- Easier to find related commands
+
+**Use when:** 15+ commands, clear categories
+
+## Best Practices
+
+### Command Design
+
+1. **Single responsibility:** One command, one task
+2. **Clear descriptions:** Self-explanatory in `/help`
+3. **Explicit dependencies:** Use `allowed-tools` when needed
+4. **Document arguments:** Always provide `argument-hint`
+5. **Consistent naming:** Use verb-noun pattern (review-pr, fix-issue)
+
+### Argument Handling
+
+1. **Validate arguments:** Check for required arguments in prompt
+2. **Provide defaults:** Suggest defaults when arguments missing
+3. **Document format:** Explain expected argument format
+4. **Handle edge cases:** Consider missing or invalid arguments
+
+```markdown
+---
+argument-hint: [pr-number]
+---
+
+$IF($1,
+  Review PR #$1,
+  Please provide a PR number. Usage: /review-pr [number]
+)
+```
+
+### File References
+
+1. **Explicit paths:** Use clear file paths
+2. **Check existence:** Handle missing files gracefully
+3. **Relative paths:** Use project-relative paths
+4. **Glob support:** Consider using Glob tool for patterns
+
+### Bash Commands
+
+1. **Limit scope:** Use `Bash(git:*)` not `Bash(*)`
+2. **Safe commands:** Avoid destructive operations
+3. **Handle errors:** Consider command failures
+4. **Keep fast:** Long-running commands slow invocation
+
+### Documentation
+
+1. **Add comments:** Explain complex logic
+2. **Provide examples:** Show usage in comments
+3. **List requirements:** Document dependencies
+4. **Version commands:** Note breaking changes
+
+```markdown
+---
+description: Deploy application to environment
+argument-hint: [environment] [version]
+---
+
+<!--
+Usage: /deploy [staging|production] [version]
+Requires: AWS credentials configured
+Example: /deploy staging v1.2.3
+-->
+
+Deploy application to $1 environment using version $2...
+```
+
+## Common Patterns
+
+### Review Pattern
+
+```markdown
+---
+description: Review code changes
+allowed-tools: Read, Bash(git:*)
+---
+
+Files changed: !`git diff --name-only`
+
+Review each file for:
+1. Code quality and style
+2. Potential bugs or issues
+3. Test coverage
+4. Documentation needs
+
+Provide specific feedback for each file.
+```
+
+### Testing Pattern
+
+```markdown
+---
+description: Run tests for specific file
+argument-hint: [test-file]
+allowed-tools: Bash(npm:*)
+---
+
+Run tests: !`npm test $1`
+
+Analyze results and suggest fixes for failures.
+```
+
+### Documentation Pattern
+
+```markdown
+---
+description: Generate documentation for file
+argument-hint: [source-file]
+---
+
+Generate comprehensive documentation for @$1 including:
+- Function/class descriptions
+- Parameter documentation
+- Return value descriptions
+- Usage examples
+- Edge cases and errors
+```
+
+### Workflow Pattern
+
+```markdown
+---
+description: Complete PR workflow
+argument-hint: [pr-number]
+allowed-tools: Bash(gh:*), Read
+---
+
+PR #$1 Workflow:
+
+1. Fetch PR: !`gh pr view $1`
+2. Review changes
+3. Run checks
+4. Approve or request changes
+```
+
+## Troubleshooting
+
+**Command not appearing:**
+- Check file is in correct directory
+- Verify `.md` extension present
+- Ensure valid Markdown format
+- Restart Claude Code
+
+**Arguments not working:**
+- Verify `$1`, `$2` syntax correct
+- Check `argument-hint` matches usage
+- Ensure no extra spaces
+
+**Bash execution failing:**
+- Check `allowed-tools` includes Bash
+- Verify command syntax in backticks
+- Test command in terminal first
+- Check for required permissions
+
+**File references not working:**
+- Verify `@` syntax correct
+- Check file path is valid
+- Ensure Read tool allowed
+- Use absolute or project-relative paths
+
+## Plugin-Specific Features
+
+### CLAUDE_PLUGIN_ROOT Variable
+
+Plugin commands have access to `${CLAUDE_PLUGIN_ROOT}`, an environment variable that resolves to the plugin's absolute path.
+
+**Purpose:**
+- Reference plugin files portably
+- Execute plugin scripts
+- Load plugin configuration
+- Access plugin templates
+
+**Basic usage:**
+
+```markdown
+---
+description: Analyze using plugin script
+allowed-tools: Bash(node:*)
+---
+
+Run analysis: !`node ${CLAUDE_PLUGIN_ROOT}/scripts/analyze.js $1`
+
+Review results and report findings.
+```
+
+**Common patterns:**
+
+```markdown
+# Execute plugin script
+!`bash ${CLAUDE_PLUGIN_ROOT}/scripts/script.sh`
+
+# Load plugin configuration
+@${CLAUDE_PLUGIN_ROOT}/config/settings.json
+
+# Use plugin template
+@${CLAUDE_PLUGIN_ROOT}/templates/report.md
+
+# Access plugin resources
+@${CLAUDE_PLUGIN_ROOT}/docs/reference.md
+```
+
+**Why use it:**
+- Works across all installations
+- Portable between systems
+- No hardcoded paths needed
+- Essential for multi-file plugins
+
+### Plugin Command Organization
+
+Plugin commands discovered automatically from `commands/` directory:
+
+```
+plugin-name/
+├── commands/
+│   ├── foo.md              # /foo (plugin:plugin-name)
+│   ├── bar.md              # /bar (plugin:plugin-name)
+│   └── utils/
+│       └── helper.md       # /helper (plugin:plugin-name:utils)
+└── plugin.json
+```
+
+**Namespace benefits:**
+- Logical command grouping
+- Shown in `/help` output
+- Avoid name conflicts
+- Organize related commands
+
+**Naming conventions:**
+- Use descriptive action names
+- Avoid generic names (test, run)
+- Consider plugin-specific prefix
+- Use hyphens for multi-word names
+
+### Plugin Command Patterns
+
+**Configuration-based pattern:**
+
+```markdown
+---
+description: Deploy using plugin configuration
+argument-hint: [environment]
+allowed-tools: Read, Bash(*)
+---
+
+Load configuration: @${CLAUDE_PLUGIN_ROOT}/config/$1-deploy.json
+
+Deploy to $1 using configuration settings.
+Monitor deployment and report status.
+```
+
+**Template-based pattern:**
+
+```markdown
+---
+description: Generate docs from template
+argument-hint: [component]
+---
+
+Template: @${CLAUDE_PLUGIN_ROOT}/templates/docs.md
+
+Generate documentation for $1 following template structure.
+```
+
+**Multi-script pattern:**
+
+```markdown
+---
+description: Complete build workflow
+allowed-tools: Bash(*)
+---
+
+Build: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/build.sh`
+Test: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/test.sh`
+Package: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/package.sh`
+
+Review outputs and report workflow status.
+```
+
+**See `references/plugin-features-reference.md` for detailed patterns.**
+
+## Integration with Plugin Components
+
+Commands can integrate with other plugin components for powerful workflows.
+
+### Agent Integration
+
+Launch plugin agents for complex tasks:
+
+```markdown
+---
+description: Deep code review
+argument-hint: [file-path]
+---
+
+Initiate comprehensive review of @$1 using the code-reviewer agent.
+
+The agent will analyze:
+- Code structure
+- Security issues
+- Performance
+- Best practices
+
+Agent uses plugin resources:
+- ${CLAUDE_PLUGIN_ROOT}/config/rules.json
+- ${CLAUDE_PLUGIN_ROOT}/checklists/review.md
+```
+
+**Key points:**
+- Agent must exist in `plugin/agents/` directory
+- Claude uses Task tool to launch agent
+- Document agent capabilities
+- Reference plugin resources agent uses
+
+### Skill Integration
+
+Leverage plugin skills for specialized knowledge:
+
+```markdown
+---
+description: Document API with standards
+argument-hint: [api-file]
+---
+
+Document API in @$1 following plugin standards.
+
+Use the api-docs-standards skill to ensure:
+- Complete endpoint documentation
+- Consistent formatting
+- Example quality
+- Error documentation
+
+Generate production-ready API docs.
+```
+
+**Key points:**
+- Skill must exist in `plugin/skills/` directory
+- Mention skill name to trigger invocation
+- Document skill purpose
+- Explain what skill provides
+
+### Hook Coordination
+
+Design commands that work with plugin hooks:
+- Commands can prepare state for hooks to process
+- Hooks execute automatically on tool events
+- Commands should document expected hook behavior
+- Guide Claude on interpreting hook output
+
+See `references/plugin-features-reference.md` for examples of commands that coordinate with hooks
+
+### Multi-Component Workflows
+
+Combine agents, skills, and scripts:
+
+```markdown
+---
+description: Comprehensive review workflow
+argument-hint: [file]
+allowed-tools: Bash(node:*), Read
+---
+
+Target: @$1
+
+Phase 1 - Static Analysis:
+!`node ${CLAUDE_PLUGIN_ROOT}/scripts/lint.js $1`
+
+Phase 2 - Deep Review:
+Launch code-reviewer agent for detailed analysis.
+
+Phase 3 - Standards Check:
+Use coding-standards skill for validation.
+
+Phase 4 - Report:
+Template: @${CLAUDE_PLUGIN_ROOT}/templates/review.md
+
+Compile findings into report following template.
+```
+
+**When to use:**
+- Complex multi-step workflows
+- Leverage multiple plugin capabilities
+- Require specialized analysis
+- Need structured outputs
+
+## Validation Patterns
+
+Commands should validate inputs and resources before processing.
+
+### Argument Validation
+
+```markdown
+---
+description: Deploy with validation
+argument-hint: [environment]
+---
+
+Validate environment: !`echo "$1" | grep -E "^(dev|staging|prod)$" || echo "INVALID"`
+
+If $1 is valid environment:
+  Deploy to $1
+Otherwise:
+  Explain valid environments: dev, staging, prod
+  Show usage: /deploy [environment]
+```
+
+### File Existence Checks
+
+```markdown
+---
+description: Process configuration
+argument-hint: [config-file]
+---
+
+Check file exists: !`test -f $1 && echo "EXISTS" || echo "MISSING"`
+
+If file exists:
+  Process configuration: @$1
+Otherwise:
+  Explain where to place config file
+  Show expected format
+  Provide example configuration
+```
+
+### Plugin Resource Validation
+
+```markdown
+---
+description: Run plugin analyzer
+allowed-tools: Bash(test:*)
+---
+
+Validate plugin setup:
+- Script: !`test -x ${CLAUDE_PLUGIN_ROOT}/bin/analyze && echo "✓" || echo "✗"`
+- Config: !`test -f ${CLAUDE_PLUGIN_ROOT}/config.json && echo "✓" || echo "✗"`
+
+If all checks pass, run analysis.
+Otherwise, report missing components.
+```
+
+### Error Handling
+
+```markdown
+---
+description: Build with error handling
+allowed-tools: Bash(*)
+---
+
+Execute build: !`bash ${CLAUDE_PLUGIN_ROOT}/scripts/build.sh 2>&1 || echo "BUILD_FAILED"`
+
+If build succeeded:
+  Report success and output location
+If build failed:
+  Analyze error output
+  Suggest likely causes
+  Provide troubleshooting steps
+```
+
+**Best practices:**
+- Validate early in command
+- Provide helpful error messages
+- Suggest corrective actions
+- Handle edge cases gracefully
+
+---
+
+For detailed frontmatter field specifications, see `references/frontmatter-reference.md`.
+For plugin-specific features and patterns, see `references/plugin-features-reference.md`.
+For command pattern examples, see `examples/` directory.
+
+```
+
+### 📄 文件: README.md
+```markdown
+# Command Development Skill
+
+Comprehensive guidance on creating Claude Code slash commands, including file format, frontmatter options, dynamic arguments, and best practices.
+
+## Overview
+
+This skill provides knowledge about:
+- Slash command file format and structure
+- YAML frontmatter configuration fields
+- Dynamic arguments ($ARGUMENTS, $1, $2, etc.)
+- File references with @ syntax
+- Bash execution with !` syntax
+- Command organization and namespacing
+- Best practices for command development
+- Plugin-specific features (${CLAUDE_PLUGIN_ROOT}, plugin patterns)
+- Integration with plugin components (agents, skills, hooks)
+- Validation patterns and error handling
+
+## Skill Structure
+
+### SKILL.md (~2,470 words)
+
+Core skill content covering:
+
+**Fundamentals:**
+- Command basics and locations
+- File format (Markdown with optional frontmatter)
+- YAML frontmatter fields overview
+- Dynamic arguments ($ARGUMENTS and positional)
+- File references (@ syntax)
+- Bash execution (!` syntax)
+- Command organization patterns
+- Best practices and common patterns
+- Troubleshooting
+
+**Plugin-Specific:**
+- ${CLAUDE_PLUGIN_ROOT} environment variable
+- Plugin command discovery and organization
+- Plugin command patterns (configuration, template, multi-script)
+- Integration with plugin components (agents, skills, hooks)
+- Validation patterns (argument, file, resource, error handling)
+
+### References
+
+Detailed documentation:
+
+- **frontmatter-reference.md**: Complete YAML frontmatter field specifications
+  - All field descriptions with types and defaults
+  - When to use each field
+  - Examples and best practices
+  - Validation and common errors
+
+- **plugin-features-reference.md**: Plugin-specific command features
+  - Plugin command discovery and organization
+  - ${CLAUDE_PLUGIN_ROOT} environment variable usage
+  - Plugin command patterns (configuration, template, multi-script)
+  - Integration with plugin agents, skills, and hooks
+  - Validation patterns and error handling
+
+### Examples
+
+Practical command examples:
+
+- **simple-commands.md**: 10 complete command examples
+  - Code review commands
+  - Testing commands
+  - Deployment commands
+  - Documentation generators
+  - Git integration commands
+  - Analysis and research commands
+
+- **plugin-commands.md**: 10 plugin-specific command examples
+  - Simple plugin commands with scripts
+  - Multi-script workflows
+  - Template-based generation
+  - Configuration-driven deployment
+  - Agent and skill integration
+  - Multi-component workflows
+  - Validated input commands
+  - Environment-aware commands
+
+## When This Skill Triggers
+
+Claude Code activates this skill when users:
+- Ask to "create a slash command" or "add a command"
+- Need to "write a custom command"
+- Want to "define command arguments"
+- Ask about "command frontmatter" or YAML configuration
+- Need to "organize commands" or use namespacing
+- Want to create commands with file references
+- Ask about "bash execution in commands"
+- Need command development best practices
+
+## Progressive Disclosure
+
+The skill uses progressive disclosure:
+
+1. **SKILL.md** (~2,470 words): Core concepts, common patterns, and plugin features overview
+2. **References** (~13,500 words total): Detailed specifications
+   - frontmatter-reference.md (~1,200 words)
+   - plugin-features-reference.md (~1,800 words)
+   - interactive-commands.md (~2,500 words)
+   - advanced-workflows.md (~1,700 words)
+   - testing-strategies.md (~2,200 words)
+   - documentation-patterns.md (~2,000 words)
+   - marketplace-considerations.md (~2,200 words)
+3. **Examples** (~6,000 words total): Complete working command examples
+   - simple-commands.md
+   - plugin-commands.md
+
+Claude loads references and examples as needed based on task.
+
+## Command Basics Quick Reference
+
+### File Format
+
+```markdown
+---
+description: Brief description
+argument-hint: [arg1] [arg2]
+allowed-tools: Read, Bash(git:*)
+---
+
+Command prompt content with:
+- Arguments: $1, $2, or $ARGUMENTS
+- Files: @path/to/file
+- Bash: !`command here`
+```
+
+### Locations
+
+- **Project**: `.claude/commands/` (shared with team)
+- **Personal**: `~/.claude/commands/` (your commands)
+- **Plugin**: `plugin-name/commands/` (plugin-specific)
+
+### Key Features
+
+**Dynamic arguments:**
+- `$ARGUMENTS` - All arguments as single string
+- `$1`, `$2`, `$3` - Positional arguments
+
+**File references:**
+- `@path/to/file` - Include file contents
+
+**Bash execution:**
+- `!`command`` - Execute and include output
+
+## Frontmatter Fields Quick Reference
+
+| Field | Purpose | Example |
+|-------|---------|---------|
+| `description` | Brief description for /help | `"Review code for issues"` |
+| `allowed-tools` | Restrict tool access | `Read, Bash(git:*)` |
+| `model` | Specify model | `sonnet`, `opus`, `haiku` |
+| `argument-hint` | Document arguments | `[pr-number] [priority]` |
+| `disable-model-invocation` | Manual-only command | `true` |
+
+## Common Patterns
+
+### Simple Review Command
+
+```markdown
+---
+description: Review code for issues
+---
+
+Review this code for quality and potential bugs.
+```
+
+### Command with Arguments
+
+```markdown
+---
+description: Deploy to environment
+argument-hint: [environment] [version]
+---
+
+Deploy to $1 environment using version $2
+```
+
+### Command with File Reference
+
+```markdown
+---
+description: Document file
+argument-hint: [file-path]
+---
+
+Generate documentation for @$1
+```
+
+### Command with Bash Execution
+
+```markdown
+---
+description: Show Git status
+allowed-tools: Bash(git:*)
+---
+
+Current status: !`git status`
+Recent commits: !`git log --oneline -5`
+```
+
+## Development Workflow
+
+1. **Design command:**
+   - Define purpose and scope
+   - Determine required arguments
+   - Identify needed tools
+
+2. **Create file:**
+   - Choose appropriate location
+   - Create `.md` file with command name
+   - Write basic prompt
+
+3. **Add frontmatter:**
+   - Start minimal (just description)
+   - Add fields as needed (allowed-tools, etc.)
+   - Document arguments with argument-hint
+
+4. **Test command:**
+   - Invoke with `/command-name`
+   - Verify arguments work
+   - Check bash execution
+   - Test file references
+
+5. **Refine:**
+   - Improve prompt clarity
+   - Handle edge cases
+   - Add examples in comments
+   - Document requirements
+
+## Best Practices Summary
+
+1. **Single responsibility**: One command, one clear purpose
+2. **Clear descriptions**: Make discoverable in `/help`
+3. **Document arguments**: Always use argument-hint
+4. **Minimal tools**: Use most restrictive allowed-tools
+5. **Test thoroughly**: Verify all features work
+6. **Add comments**: Explain complex logic
+7. **Handle errors**: Consider missing arguments/files
+
+## Status
+
+**Completed enhancements:**
+- ✓ Plugin command patterns (${CLAUDE_PLUGIN_ROOT}, discovery, organization)
+- ✓ Integration patterns (agents, skills, hooks coordination)
+- ✓ Validation patterns (input, file, resource validation, error handling)
+
+**Remaining enhancements (in progress):**
+- Advanced workflows (multi-step command sequences)
+- Testing strategies (how to test commands effectively)
+- Documentation patterns (command documentation best practices)
+- Marketplace considerations (publishing and distribution)
+
+## Maintenance
+
+To update this skill:
+1. Keep SKILL.md focused on core fundamentals
+2. Move detailed specifications to references/
+3. Add new examples/ for different use cases
+4. Update frontmatter when new fields added
+5. Ensure imperative/infinitive form throughout
+6. Test examples work with current Claude Code
+
+## Version History
+
+**v0.1.0** (2025-01-15):
+- Initial release with basic command fundamentals
+- Frontmatter field reference
+- 10 simple command examples
+- Ready for plugin-specific pattern additions
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\command-development\references\marketplace-considerations.md
+```python
+# Marketplace Considerations for Commands
+
+Guidelines for creating commands designed for distribution and marketplace success.
+
+## Overview
+
+Commands distributed through marketplaces need additional consideration beyond personal use commands. They must work across environments, handle diverse use cases, and provide excellent user experience for unknown users.
+
+## Design for Distribution
+
+### Universal Compatibility
+
+**Cross-platform considerations:**
+
+```markdown
+---
+description: Cross-platform command
+allowed-tools: Bash(*)
+---
+
+# Platform-Aware Command
+
+Detecting platform...
+
+case "$(uname)" in
+  Darwin*)  PLATFORM="macOS" ;;
+  Linux*)   PLATFORM="Linux" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="Windows" ;;
+  *)        PLATFORM="Unknown" ;;
+esac
+
+Platform: $PLATFORM
+
+<!-- Adjust behavior based on platform -->
+if [ "$PLATFORM" = "Windows" ]; then
+  # Windows-specific handling
+  PATH_SEP="\\"
+  NULL_DEVICE="NUL"
+else
+  # Unix-like handling
+  PATH_SEP="/"
+  NULL_DEVICE="/dev/null"
+fi
+
+[Platform-appropriate implementation...]
+```
+
+**Avoid platform-specific commands:**
+
+```markdown
+<!-- BAD: macOS-specific -->
+!`pbcopy < file.txt`
+
+<!-- GOOD: Platform detection -->
+if command -v pbcopy > /dev/null; then
+  pbcopy < file.txt
+elif command -v xclip > /dev/null; then
+  xclip -selection clipboard < file.txt
+elif command -v clip.exe > /dev/null; then
+  cat file.txt | clip.exe
+else
+  echo "Clipboard not available on this platform"
+fi
+```
+
+### Minimal Dependencies
+
+**Check for required tools:**
+
+```markdown
+---
+description: Dependency-aware command
+allowed-tools: Bash(*)
+---
+
+# Check Dependencies
+
+Required tools:
+- git
+- jq
+- node
+
+Checking availability...
+
+MISSING_DEPS=""
+
+for tool in git jq node; do
+  if ! command -v $tool > /dev/null; then
+    MISSING_DEPS="$MISSING_DEPS $tool"
+  fi
+done
+
+if [ -n "$MISSING_DEPS" ]; then
+  ❌ ERROR: Missing required dependencies:$MISSING_DEPS
+
+  INSTALLATION:
+  - git: https://git-scm.com/downloads
+  - jq: https://stedolan.github.io/jq/download/
+  - node: https://nodejs.org/
+
+  Install missing tools and try again.
+
+  Exit.
+fi
+
+✓ All dependencies available
+
+[Continue with command...]
+```
+
+**Document optional dependencies:**
+
+```markdown
+<!--
+DEPENDENCIES:
+  Required:
+  - git 2.0+: Version control
+  - jq 1.6+: JSON processing
+
+  Optional:
+  - gh: GitHub CLI (for PR operations)
+  - docker: Container operations (for containerized tests)
+
+  Feature availability depends on installed tools.
+-->
+```
+
+### Graceful Degradation
+
+**Handle missing features:**
+
+```markdown
+---
+description: Feature-aware command
+---
+
+# Feature Detection
+
+Detecting available features...
+
+FEATURES=""
+
+if command -v gh > /dev/null; then
+  FEATURES="$FEATURES github"
+fi
+
+if command -v docker > /dev/null; then
+  FEATURES="$FEATURES docker"
+fi
+
+Available features: $FEATURES
+
+if echo "$FEATURES" | grep -q "github"; then
+  # Full functionality with GitHub integration
+  echo "✓ GitHub integration available"
+else
+  # Reduced functionality without GitHub
+  echo "⚠ Limited functionality: GitHub CLI not installed"
+  echo "  Install 'gh' for full features"
+fi
+
+[Adapt behavior based on available features...]
+```
+
+## User Experience for Unknown Users
+
+### Clear Onboarding
+
+**First-run experience:**
+
+```markdown
+---
+description: Command with onboarding
+allowed-tools: Read, Write
+---
+
+# First Run Check
+
+if [ ! -f ".claude/command-initialized" ]; then
+  **Welcome to Command Name!**
+
+  This appears to be your first time using this command.
+
+  WHAT THIS COMMAND DOES:
+  [Brief explanation of purpose and benefits]
+
+  QUICK START:
+  1. Basic usage: /command [arg]
+  2. For help: /command help
+  3. Examples: /command examples
+
+  SETUP:
+  No additional setup required. You're ready to go!
+
+  ✓ Initialization complete
+
+  [Create initialization marker]
+
+  Ready to proceed with your request...
+fi
+
+[Normal command execution...]
+```
+
+**Progressive feature discovery:**
+
+```markdown
+---
+description: Command with tips
+---
+
+# Command Execution
+
+[Main functionality...]
+
+---
+
+💡 TIP: Did you know?
+
+You can speed up this command with the --fast flag:
+  /command --fast [args]
+
+For more tips: /command tips
+```
+
+### Comprehensive Error Handling
+
+**Anticipate user mistakes:**
+
+```markdown
+---
+description: Forgiving command
+---
+
+# User Input Handling
+
+Argument: "$1"
+
+<!-- Check for common typos -->
+if [ "$1" = "hlep" ] || [ "$1" = "hepl" ]; then
+  Did you mean: help?
+
+  Showing help instead...
+  [Display help]
+
+  Exit.
+fi
+
+<!-- Suggest similar commands if not found -->
+if [ "$1" != "valid-option1" ] && [ "$1" != "valid-option2" ]; then
+  ❌ Unknown option: $1
+
+  Did you mean:
+  - valid-option1 (most similar)
+  - valid-option2
+
+  For all options: /command help
+
+  Exit.
+fi
+
+[Command continues...]
+```
+
+**Helpful diagnostics:**
+
+```markdown
+---
+description: Diagnostic command
+---
+
+# Operation Failed
+
+The operation could not complete.
+
+**Diagnostic Information:**
+
+Environment:
+- Platform: $(uname)
+- Shell: $SHELL
+- Working directory: $(pwd)
+- Command: /command $@
+
+Checking common issues:
+- Git repository: $(git rev-parse --git-dir 2>&1)
+- Write permissions: $(test -w . && echo "OK" || echo "DENIED")
+- Required files: $(test -f config.yml && echo "Found" || echo "Missing")
+
+This information helps debug the issue.
+
+For support, include the above diagnostics.
+```
+
+## Distribution Best Practices
+
+### Namespace Awareness
+
+**Avoid name collisions:**
+
+```markdown
+---
+description: Namespaced command
+---
+
+<!--
+COMMAND NAME: plugin-name-command
+
+This command is namespaced with the plugin name to avoid
+conflicts with commands from other plugins.
+
+Alternative naming approaches:
+- Use plugin prefix: /plugin-command
+- Use category: /category-command
+- Use verb-noun: /verb-noun
+
+Chosen approach: plugin-name prefix
+Reasoning: Clearest ownership, least likely to conflict
+-->
+
+# Plugin Name Command
+
+[Implementation...]
+```
+
+**Document naming rationale:**
+
+```markdown
+<!--
+NAMING DECISION:
+
+Command name: /deploy-app
+
+Alternatives considered:
+- /deploy: Too generic, likely conflicts
+- /app-deploy: Less intuitive ordering
+- /my-plugin-deploy: Too verbose
+
+Final choice balances:
+- Discoverability (clear purpose)
+- Brevity (easy to type)
+- Uniqueness (unlikely conflicts)
+-->
+```
+
+### Configurability
+
+**User preferences:**
+
+```markdown
+---
+description: Configurable command
+allowed-tools: Read
+---
+
+# Load User Configuration
+
+Default configuration:
+- verbose: false
+- color: true
+- max_results: 10
+
+Checking for user config: .claude/plugin-name.local.md
+
+if [ -f ".claude/plugin-name.local.md" ]; then
+  # Parse YAML frontmatter for settings
+  VERBOSE=$(grep "^verbose:" .claude/plugin-name.local.md | cut -d: -f2 | tr -d ' ')
+  COLOR=$(grep "^color:" .claude/plugin-name.local.md | cut -d: -f2 | tr -d ' ')
+  MAX_RESULTS=$(grep "^max_results:" .claude/plugin-name.local.md | cut -d: -f2 | tr -d ' ')
+
+  echo "✓ Using user configuration"
+else
+  echo "Using default configuration"
+  echo "Create .claude/plugin-name.local.md to customize"
+fi
+
+[Use configuration in command...]
+```
+
+**Sensible defaults:**
+
+```markdown
+---
+description: Command with smart defaults
+---
+
+# Smart Defaults
+
+Configuration:
+- Format: ${FORMAT:-json}  # Defaults to json
+- Output: ${OUTPUT:-stdout}  # Defaults to stdout
+- Verbose: ${VERBOSE:-false}  # Defaults to false
+
+These defaults work for 80% of use cases.
+
+Override with arguments:
+  /command --format yaml --output file.txt --verbose
+
+Or set in .claude/plugin-name.local.md:
+\`\`\`yaml
+---
+format: yaml
+output: custom.txt
+verbose: true
+---
+\`\`\`
+```
+
+### Version Compatibility
+
+**Version checking:**
+
+```markdown
+---
+description: Version-aware command
+---
+
+<!--
+COMMAND VERSION: 2.1.0
+
+COMPATIBILITY:
+- Requires plugin version: >= 2.0.0
+- Breaking changes from v1.x documented in MIGRATION.md
+
+VERSION HISTORY:
+- v2.1.0: Added --new-feature flag
+- v2.0.0: BREAKING: Changed argument order
+- v1.0.0: Initial release
+-->
+
+# Version Check
+
+Command version: 2.1.0
+Plugin version: [detect from plugin.json]
+
+if [  "$PLUGIN_VERSION" < "2.0.0" ]; then
+  ❌ ERROR: Incompatible plugin version
+
+  This command requires plugin version >= 2.0.0
+  Current version: $PLUGIN_VERSION
+
+  Update plugin:
+    /plugin update plugin-name
+
+  Exit.
+fi
+
+✓ Version compatible
+
+[Command continues...]
+```
+
+**Deprecation warnings:**
+
+```markdown
+---
+description: Command with deprecation warnings
+---
+
+# Deprecation Check
+
+if [ "$1" = "--old-flag" ]; then
+  ⚠️  DEPRECATION WARNING
+
+  The --old-flag option is deprecated as of v2.0.0
+  It will be removed in v3.0.0 (est. June 2025)
+
+  Use instead: --new-flag
+
+  Example:
+    Old: /command --old-flag value
+    New: /command --new-flag value
+
+  See migration guide: /command migrate
+
+  Continuing with deprecated behavior for now...
+fi
+
+[Handle both old and new flags during deprecation period...]
+```
+
+## Marketplace Presentation
+
+### Command Discovery
+
+**Descriptive naming:**
+
+```markdown
+---
+description: Review pull request with security and quality checks
+---
+
+<!-- GOOD: Descriptive name and description -->
+```
+
+```markdown
+---
+description: Do the thing
+---
+
+<!-- BAD: Vague description -->
+```
+
+**Searchable keywords:**
+
+```markdown
+<!--
+KEYWORDS: security, code-review, quality, validation, audit
+
+These keywords help users discover this command when searching
+for related functionality in the marketplace.
+-->
+```
+
+### Showcase Examples
+
+**Compelling demonstrations:**
+
+```markdown
+---
+description: Advanced code analysis command
+---
+
+# Code Analysis Command
+
+This command performs deep code analysis with actionable insights.
+
+## Demo: Quick Security Audit
+
+Try it now:
+\`\`\`
+/analyze-code src/ --security
+\`\`\`
+
+**What you'll get:**
+- Security vulnerability detection
+- Code quality metrics
+- Performance bottleneck identification
+- Actionable recommendations
+
+**Sample output:**
+\`\`\`
+Security Analysis Results
+=========================
+
+🔴 Critical (2):
+  - SQL injection risk in users.js:45
+  - XSS vulnerability in display.js:23
+
+🟡 Warnings (5):
+  - Unvalidated input in api.js:67
+  ...
+
+Recommendations:
+1. Fix critical issues immediately
+2. Review warnings before next release
+3. Run /analyze-code --fix for auto-fixes
+\`\`\`
+
+---
+
+Ready to analyze your code...
+
+[Command implementation...]
+```
+
+### User Reviews and Feedback
+
+**Feedback mechanism:**
+
+```markdown
+---
+description: Command with feedback
+---
+
+# Command Complete
+
+[Command results...]
+
+---
+
+**How was your experience?**
+
+This helps improve the command for everyone.
+
+Rate this command:
+- 👍 Helpful
+- 👎 Not helpful
+- 🐛 Found a bug
+- 💡 Have a suggestion
+
+Reply with an emoji or:
+- /command feedback
+
+Your feedback matters!
+```
+
+**Usage analytics preparation:**
+
+```markdown
+<!--
+ANALYTICS NOTES:
+
+Track for improvement:
+- Most common arguments
+- Failure rates
+- Average execution time
+- User satisfaction scores
+
+Privacy-preserving:
+- No personally identifiable information
+- Aggregate statistics only
+- User opt-out respected
+-->
+```
+
+## Quality Standards
+
+### Professional Polish
+
+**Consistent branding:**
+
+```markdown
+---
+description: Branded command
+---
+
+# ✨ Command Name
+
+Part of the [Plugin Name] suite
+
+[Command functionality...]
+
+---
+
+**Need Help?**
+- Documentation: https://docs.example.com
+- Support: support@example.com
+- Community: https://community.example.com
+
+Powered by Plugin Name v2.1.0
+```
+
+**Attention to detail:**
+
+```markdown
+<!-- Details that matter -->
+
+✓ Use proper emoji/symbols consistently
+✓ Align output columns neatly
+✓ Format numbers with thousands separators
+✓ Use color/formatting appropriately
+✓ Provide progress indicators
+✓ Show estimated time remaining
+✓ Confirm successful operations
+```
+
+### Reliability
+
+**Idempotency:**
+
+```markdown
+---
+description: Idempotent command
+---
+
+# Safe Repeated Execution
+
+Checking if operation already completed...
+
+if [ -f ".claude/operation-completed.flag" ]; then
+  ℹ️  Operation already completed
+
+  Completed at: $(cat .claude/operation-completed.flag)
+
+  To re-run:
+  1. Remove flag: rm .claude/operation-completed.flag
+  2. Run command again
+
+  Otherwise, no action needed.
+
+  Exit.
+fi
+
+Performing operation...
+
+[Safe, repeatable operation...]
+
+Marking complete...
+echo "$(date)" > .claude/operation-completed.flag
+```
+
+**Atomic operations:**
+
+```markdown
+---
+description: Atomic command
+---
+
+# Atomic Operation
+
+This operation is atomic - either fully succeeds or fully fails.
+
+Creating temporary workspace...
+TEMP_DIR=$(mktemp -d)
+
+Performing changes in isolated environment...
+[Make changes in $TEMP_DIR]
+
+if [ $? -eq 0 ]; then
+  ✓ Changes validated
+
+  Applying changes atomically...
+  mv $TEMP_DIR/* ./target/
+
+  ✓ Operation complete
+else
+  ❌ Changes failed validation
+
+  Rolling back...
+  rm -rf $TEMP_DIR
+
+  No changes applied. Safe to retry.
+fi
+```
+
+## Testing for Distribution
+
+### Pre-Release Checklist
+
+```markdown
+<!--
+PRE-RELEASE CHECKLIST:
+
+Functionality:
+- [ ] Works on macOS
+- [ ] Works on Linux
+- [ ] Works on Windows (WSL)
+- [ ] All arguments tested
+- [ ] Error cases handled
+- [ ] Edge cases covered
+
+User Experience:
+- [ ] Clear description
+- [ ] Helpful error messages
+- [ ] Examples provided
+- [ ] First-run experience good
+- [ ] Documentation complete
+
+Distribution:
+- [ ] No hardcoded paths
+- [ ] Dependencies documented
+- [ ] Configuration options clear
+- [ ] Version number set
+- [ ] Changelog updated
+
+Quality:
+- [ ] No TODO comments
+- [ ] No debug code
+- [ ] Performance acceptable
+- [ ] Security reviewed
+- [ ] Privacy considered
+
+Support:
+- [ ] README complete
+- [ ] Troubleshooting guide
+- [ ] Support contact provided
+- [ ] Feedback mechanism
+- [ ] License specified
+-->
+```
+
+### Beta Testing
+
+**Beta release approach:**
+
+```markdown
+---
+description: Beta command (v0.9.0)
+---
+
+# 🧪 Beta Command
+
+**This is a beta release**
+
+Features may change based on feedback.
+
+BETA STATUS:
+- Version: 0.9.0
+- Stability: Experimental
+- Support: Limited
+- Feedback: Encouraged
+
+Known limitations:
+- Performance not optimized
+- Some edge cases not handled
+- Documentation incomplete
+
+Help improve this command:
+- Report issues: /command report-issue
+- Suggest features: /command suggest
+- Join beta testers: /command join-beta
+
+---
+
+[Command implementation...]
+
+---
+
+**Thank you for beta testing!**
+
+Your feedback helps make this command better.
+```
+
+## Maintenance and Updates
+
+### Update Strategy
+
+**Versioned commands:**
+
+```markdown
+<!--
+VERSION STRATEGY:
+
+Major (X.0.0): Breaking changes
+- Document all breaking changes
+- Provide migration guide
+- Support old version briefly
+
+Minor (x.Y.0): New features
+- Backward compatible
+- Announce new features
+- Update examples
+
+Patch (x.y.Z): Bug fixes
+- No user-facing changes
+- Update changelog
+- Security fixes prioritized
+
+Release schedule:
+- Patches: As needed
+- Minors: Monthly
+- Majors: Annually or as needed
+-->
+```
+
+**Update notifications:**
+
+```markdown
+---
+description: Update-aware command
+---
+
+# Check for Updates
+
+Current version: 2.1.0
+Latest version: [check if available]
+
+if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+  📢 UPDATE AVAILABLE
+
+  New version: $LATEST_VERSION
+  Current: $CURRENT_VERSION
+
+  What's new:
+  - Feature improvements
+  - Bug fixes
+  - Performance enhancements
+
+  Update with:
+    /plugin update plugin-name
+
+  Release notes: https://releases.example.com/v$LATEST_VERSION
+fi
+
+[Command continues...]
+```
+
+## Best Practices Summary
+
+### Distribution Design
+
+1. **Universal**: Works across platforms and environments
+2. **Self-contained**: Minimal dependencies, clear requirements
+3. **Graceful**: Degrades gracefully when features unavailable
+4. **Forgiving**: Anticipates and handles user mistakes
+5. **Helpful**: Clear errors, good defaults, excellent docs
+
+### Marketplace Success
+
+1. **Discoverable**: Clear name, good description, searchable keywords
+2. **Professional**: Polished presentation, consistent branding
+3. **Reliable**: Tested thoroughly, handles edge cases
+4. **Maintainable**: Versioned, updated regularly, supported
+5. **User-focused**: Great UX, responsive to feedback
+
+### Quality Standards
+
+1. **Complete**: Fully documented, all features working
+2. **Tested**: Works in real environments, edge cases handled
+3. **Secure**: No vulnerabilities, safe operations
+4. **Performant**: Reasonable speed, resource-efficient
+5. **Ethical**: Privacy-respecting, user consent
+
+With these considerations, commands become marketplace-ready and delight users across diverse environments and use cases.
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\command-development\references\documentation-patterns.md
+```python
+# Command Documentation Patterns
+
+Strategies for creating self-documenting, maintainable commands with excellent user experience.
+
+## Overview
+
+Well-documented commands are easier to use, maintain, and distribute. Documentation should be embedded in the command itself, making it immediately accessible to users and maintainers.
+
+## Self-Documenting Command Structure
+
+### Complete Command Template
+
+```markdown
+---
+description: Clear, actionable description under 60 chars
+argument-hint: [arg1] [arg2] [optional-arg]
+allowed-tools: Read, Bash(git:*)
+model: sonnet
+---
+
+<!--
+COMMAND: command-name
+VERSION: 1.0.0
+AUTHOR: Team Name
+LAST UPDATED: 2025-01-15
+
+PURPOSE:
+Detailed explanation of what this command does and why it exists.
+
+USAGE:
+  /command-name arg1 arg2
+
+ARGUMENTS:
+  arg1: Description of first argument (required)
+  arg2: Description of second argument (optional, defaults to X)
+
+EXAMPLES:
+  /command-name feature-branch main
+    → Compares feature-branch with main
+
+  /command-name my-branch
+    → Compares my-branch with current branch
+
+REQUIREMENTS:
+  - Git repository
+  - Branch must exist
+  - Permissions to read repository
+
+RELATED COMMANDS:
+  /other-command - Related functionality
+  /another-command - Alternative approach
+
+TROUBLESHOOTING:
+  - If branch not found: Check branch name spelling
+  - If permission denied: Check repository access
+
+CHANGELOG:
+  v1.0.0 (2025-01-15): Initial release
+  v0.9.0 (2025-01-10): Beta version
+-->
+
+# Command Implementation
+
+[Command prompt content here...]
+
+[Explain what will happen...]
+
+[Guide user through steps...]
+
+[Provide clear output...]
+```
+
+### Documentation Comment Sections
+
+**PURPOSE**: Why the command exists
+- Problem it solves
+- Use cases
+- When to use vs when not to use
+
+**USAGE**: Basic syntax
+- Command invocation pattern
+- Required vs optional arguments
+- Default values
+
+**ARGUMENTS**: Detailed argument documentation
+- Each argument described
+- Type information
+- Valid values/ranges
+- Defaults
+
+**EXAMPLES**: Concrete usage examples
+- Common use cases
+- Edge cases
+- Expected outputs
+
+**REQUIREMENTS**: Prerequisites
+- Dependencies
+- Permissions
+- Environmental setup
+
+**RELATED COMMANDS**: Connections
+- Similar commands
+- Complementary commands
+- Alternative approaches
+
+**TROUBLESHOOTING**: Common issues
+- Known problems
+- Solutions
+- Workarounds
+
+**CHANGELOG**: Version history
+- What changed when
+- Breaking changes highlighted
+- Migration guidance
+
+## In-Line Documentation Patterns
+
+### Commented Sections
+
+```markdown
+---
+description: Complex multi-step command
+---
+
+<!-- SECTION 1: VALIDATION -->
+<!-- This section checks prerequisites before proceeding -->
+
+Checking prerequisites...
+- Git repository: !`git rev-parse --git-dir 2>/dev/null`
+- Branch exists: [validation logic]
+
+<!-- SECTION 2: ANALYSIS -->
+<!-- Analyzes the differences between branches -->
+
+Analyzing differences between $1 and $2...
+[Analysis logic...]
+
+<!-- SECTION 3: RECOMMENDATIONS -->
+<!-- Provides actionable recommendations -->
+
+Based on analysis, recommend:
+[Recommendations...]
+
+<!-- END: Next steps for user -->
+```
+
+### Inline Explanations
+
+```markdown
+---
+description: Deployment command with inline docs
+---
+
+# Deploy to $1
+
+## Pre-flight Checks
+
+<!-- We check branch status to prevent deploying from wrong branch -->
+Current branch: !`git branch --show-current`
+
+<!-- Production deploys must come from main/master -->
+if [ "$1" = "production" ] && [ "$(git branch --show-current)" != "main" ]; then
+  ⚠️  WARNING: Not on main branch for production deploy
+  This is unusual. Confirm this is intentional.
+fi
+
+<!-- Test status ensures we don't deploy broken code -->
+Running tests: !`npm test`
+
+✓ All checks passed
+
+## Deployment
+
+<!-- Actual deployment happens here -->
+<!-- Uses blue-green strategy for zero-downtime -->
+Deploying to $1 environment...
+[Deployment steps...]
+
+<!-- Post-deployment verification -->
+Verifying deployment health...
+[Health checks...]
+
+Deployment complete!
+
+## Next Steps
+
+<!-- Guide user on what to do after deployment -->
+1. Monitor logs: /logs $1
+2. Run smoke tests: /smoke-test $1
+3. Notify team: /notify-deployment $1
+```
+
+### Decision Point Documentation
+
+```markdown
+---
+description: Interactive deployment command
+---
+
+# Interactive Deployment
+
+## Configuration Review
+
+Target: $1
+Current version: !`cat version.txt`
+New version: $2
+
+<!-- DECISION POINT: User confirms configuration -->
+<!-- This pause allows user to verify everything is correct -->
+<!-- We can't automatically proceed because deployment is risky -->
+
+Review the above configuration.
+
+**Continue with deployment?**
+- Reply "yes" to proceed
+- Reply "no" to cancel
+- Reply "edit" to modify configuration
+
+[Await user input before continuing...]
+
+<!-- After user confirms, we proceed with deployment -->
+<!-- All subsequent steps are automated -->
+
+Proceeding with deployment...
+```
+
+## Help Text Patterns
+
+### Built-in Help Command
+
+Create a help subcommand for complex commands:
+
+```markdown
+---
+description: Main command with help
+argument-hint: [subcommand] [args]
+---
+
+# Command Processor
+
+if [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+  **Command Help**
+
+  USAGE:
+    /command [subcommand] [args]
+
+  SUBCOMMANDS:
+    init [name]       Initialize new configuration
+    deploy [env]      Deploy to environment
+    status            Show current status
+    rollback          Rollback last deployment
+    help              Show this help
+
+  EXAMPLES:
+    /command init my-project
+    /command deploy staging
+    /command status
+    /command rollback
+
+  For detailed help on a subcommand:
+    /command [subcommand] --help
+
+  Exit.
+fi
+
+[Regular command processing...]
+```
+
+### Contextual Help
+
+Provide help based on context:
+
+```markdown
+---
+description: Context-aware command
+argument-hint: [operation] [target]
+---
+
+# Context-Aware Operation
+
+if [ -z "$1" ]; then
+  **No operation specified**
+
+  Available operations:
+  - analyze: Analyze target for issues
+  - fix: Apply automatic fixes
+  - report: Generate detailed report
+
+  Usage: /command [operation] [target]
+
+  Examples:
+    /command analyze src/
+    /command fix src/app.js
+    /command report
+
+  Run /command help for more details.
+
+  Exit.
+fi
+
+[Command continues if operation provided...]
+```
+
+## Error Message Documentation
+
+### Helpful Error Messages
+
+```markdown
+---
+description: Command with good error messages
+---
+
+# Validation Command
+
+if [ -z "$1" ]; then
+  ❌ ERROR: Missing required argument
+
+  The 'file-path' argument is required.
+
+  USAGE:
+    /validate [file-path]
+
+  EXAMPLE:
+    /validate src/app.js
+
+  Try again with a file path.
+
+  Exit.
+fi
+
+if [ ! -f "$1" ]; then
+  ❌ ERROR: File not found: $1
+
+  The specified file does not exist or is not accessible.
+
+  COMMON CAUSES:
+  1. Typo in file path
+  2. File was deleted or moved
+  3. Insufficient permissions
+
+  SUGGESTIONS:
+  - Check spelling: $1
+  - Verify file exists: ls -la $(dirname "$1")
+  - Check permissions: ls -l "$1"
+
+  Exit.
+fi
+
+[Command continues if validation passes...]
+```
+
+### Error Recovery Guidance
+
+```markdown
+---
+description: Command with recovery guidance
+---
+
+# Operation Command
+
+Running operation...
+
+!`risky-operation.sh`
+
+if [ $? -ne 0 ]; then
+  ❌ OPERATION FAILED
+
+  The operation encountered an error and could not complete.
+
+  WHAT HAPPENED:
+  The risky-operation.sh script returned a non-zero exit code.
+
+  WHAT THIS MEANS:
+  - Changes may be partially applied
+  - System may be in inconsistent state
+  - Manual intervention may be needed
+
+  RECOVERY STEPS:
+  1. Check operation logs: cat /tmp/operation.log
+  2. Verify system state: /check-state
+  3. If needed, rollback: /rollback-operation
+  4. Fix underlying issue
+  5. Retry operation: /retry-operation
+
+  NEED HELP?
+  - Check troubleshooting guide: /help troubleshooting
+  - Contact support with error code: ERR_OP_FAILED_001
+
+  Exit.
+fi
+```
+
+## Usage Example Documentation
+
+### Embedded Examples
+
+```markdown
+---
+description: Command with embedded examples
+---
+
+# Feature Command
+
+This command performs feature analysis with multiple options.
+
+## Basic Usage
+
+\`\`\`
+/feature analyze src/
+\`\`\`
+
+Analyzes all files in src/ directory for feature usage.
+
+## Advanced Usage
+
+\`\`\`
+/feature analyze src/ --detailed
+\`\`\`
+
+Provides detailed analysis including:
+- Feature breakdown by file
+- Usage patterns
+- Optimization suggestions
+
+## Use Cases
+
+**Use Case 1: Quick overview**
+\`\`\`
+/feature analyze .
+\`\`\`
+Get high-level feature summary of entire project.
+
+**Use Case 2: Specific directory**
+\`\`\`
+/feature analyze src/components
+\`\`\`
+Focus analysis on components directory only.
+
+**Use Case 3: Comparison**
+\`\`\`
+/feature analyze src/ --compare baseline.json
+\`\`\`
+Compare current features against baseline.
+
+---
+
+Now processing your request...
+
+[Command implementation...]
+```
+
+### Example-Driven Documentation
+
+```markdown
+---
+description: Example-heavy command
+---
+
+# Transformation Command
+
+## What This Does
+
+Transforms data from one format to another.
+
+## Examples First
+
+### Example 1: JSON to YAML
+**Input:** `data.json`
+\`\`\`json
+{"name": "test", "value": 42}
+\`\`\`
+
+**Command:** `/transform data.json yaml`
+
+**Output:** `data.yaml`
+\`\`\`yaml
+name: test
+value: 42
+\`\`\`
+
+### Example 2: CSV to JSON
+**Input:** `data.csv`
+\`\`\`csv
+name,value
+test,42
+\`\`\`
+
+**Command:** `/transform data.csv json`
+
+**Output:** `data.json`
+\`\`\`json
+[{"name": "test", "value": "42"}]
+\`\`\`
+
+### Example 3: With Options
+**Command:** `/transform data.json yaml --pretty --sort-keys`
+
+**Result:** Formatted YAML with sorted keys
+
+---
+
+## Your Transformation
+
+File: $1
+Format: $2
+
+[Perform transformation...]
+```
+
+## Maintenance Documentation
+
+### Version and Changelog
+
+```markdown
+<!--
+VERSION: 2.1.0
+LAST UPDATED: 2025-01-15
+AUTHOR: DevOps Team
+
+CHANGELOG:
+  v2.1.0 (2025-01-15):
+    - Added support for YAML configuration
+    - Improved error messages
+    - Fixed bug with special characters in arguments
+
+  v2.0.0 (2025-01-01):
+    - BREAKING: Changed argument order
+    - BREAKING: Removed deprecated --old-flag
+    - Added new validation checks
+    - Migration guide: /migration-v2
+
+  v1.5.0 (2024-12-15):
+    - Added --verbose flag
+    - Improved performance by 50%
+
+  v1.0.0 (2024-12-01):
+    - Initial stable release
+
+MIGRATION NOTES:
+  From v1.x to v2.0:
+    Old: /command arg1 arg2 --old-flag
+    New: /command arg2 arg1
+
+  The --old-flag is removed. Use --new-flag instead.
+
+DEPRECATION WARNINGS:
+  - The --legacy-mode flag is deprecated as of v2.1.0
+  - Will be removed in v3.0.0 (estimated 2025-06-01)
+  - Use --modern-mode instead
+
+KNOWN ISSUES:
+  - #123: Slow performance with large files (workaround: use --stream flag)
+  - #456: Special characters in Windows (fix planned for v2.2.0)
+-->
+```
+
+### Maintenance Notes
+
+```markdown
+<!--
+MAINTENANCE NOTES:
+
+CODE STRUCTURE:
+  - Lines 1-50: Argument parsing and validation
+  - Lines 51-100: Main processing logic
+  - Lines 101-150: Output formatting
+  - Lines 151-200: Error handling
+
+DEPENDENCIES:
+  - Requires git 2.x or later
+  - Uses jq for JSON processing
+  - Needs bash 4.0+ for associative arrays
+
+PERFORMANCE:
+  - Fast path for small inputs (< 1MB)
+  - Streams large files to avoid memory issues
+  - Caches results in /tmp for 1 hour
+
+SECURITY CONSIDERATIONS:
+  - Validates all inputs to prevent injection
+  - Uses allowed-tools to limit Bash access
+  - No credentials in command file
+
+TESTING:
+  - Unit tests: tests/command-test.sh
+  - Integration tests: tests/integration/
+  - Manual test checklist: tests/manual-checklist.md
+
+FUTURE IMPROVEMENTS:
+  - TODO: Add support for TOML format
+  - TODO: Implement parallel processing
+  - TODO: Add progress bar for large files
+
+RELATED FILES:
+  - lib/parser.sh: Shared parsing logic
+  - lib/formatter.sh: Output formatting
+  - config/defaults.yml: Default configuration
+-->
+```
+
+## README Documentation
+
+Commands should have companion README files:
+
+```markdown
+# Command Name
+
+Brief description of what the command does.
+
+## Installation
+
+This command is part of the [plugin-name] plugin.
+
+Install with:
+\`\`\`
+/plugin install plugin-name
+\`\`\`
+
+## Usage
+
+Basic usage:
+\`\`\`
+/command-name [arg1] [arg2]
+\`\`\`
+
+## Arguments
+
+- `arg1`: Description (required)
+- `arg2`: Description (optional, defaults to X)
+
+## Examples
+
+### Example 1: Basic Usage
+\`\`\`
+/command-name value1 value2
+\`\`\`
+
+Description of what happens.
+
+### Example 2: Advanced Usage
+\`\`\`
+/command-name value1 --option
+\`\`\`
+
+Description of advanced feature.
+
+## Configuration
+
+Optional configuration file: `.claude/command-name.local.md`
+
+\`\`\`markdown
+---
+default_arg: value
+enable_feature: true
+---
+\`\`\`
+
+## Requirements
+
+- Git 2.x or later
+- jq (for JSON processing)
+- Node.js 14+ (optional, for advanced features)
+
+## Troubleshooting
+
+### Issue: Command not found
+
+**Solution:** Ensure plugin is installed and enabled.
+
+### Issue: Permission denied
+
+**Solution:** Check file permissions and allowed-tools setting.
+
+## Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+MIT License - See [LICENSE](LICENSE).
+
+## Support
+
+- Issues: https://github.com/user/plugin/issues
+- Docs: https://docs.example.com
+- Email: support@example.com
+```
+
+## Best Practices
+
+### Documentation Principles
+
+1. **Write for your future self**: Assume you'll forget details
+2. **Examples before explanations**: Show, then tell
+3. **Progressive disclosure**: Basic info first, details available
+4. **Keep it current**: Update docs when code changes
+5. **Test your docs**: Verify examples actually work
+
+### Documentation Locations
+
+1. **In command file**: Core usage, examples, inline explanations
+2. **README**: Installation, configuration, troubleshooting
+3. **Separate docs**: Detailed guides, tutorials, API reference
+4. **Comments**: Implementation details for maintainers
+
+### Documentation Style
+
+1. **Clear and concise**: No unnecessary words
+2. **Active voice**: "Run the command" not "The command can be run"
+3. **Consistent terminology**: Use same terms throughout
+4. **Formatted well**: Use headings, lists, code blocks
+5. **Accessible**: Assume reader is beginner
+
+### Documentation Maintenance
+
+1. **Version everything**: Track what changed when
+2. **Deprecate gracefully**: Warn before removing features
+3. **Migration guides**: Help users upgrade
+4. **Archive old docs**: Keep old versions accessible
+5. **Review regularly**: Ensure docs match reality
+
+## Documentation Checklist
+
+Before releasing a command:
+
+- [ ] Description in frontmatter is clear
+- [ ] argument-hint documents all arguments
+- [ ] Usage examples in comments
+- [ ] Common use cases shown
+- [ ] Error messages are helpful
+- [ ] Requirements documented
+- [ ] Related commands listed
+- [ ] Changelog maintained
+- [ ] Version number updated
+- [ ] README created/updated
+- [ ] Examples actually work
+- [ ] Troubleshooting section complete
+
+With good documentation, commands become self-service, reducing support burden and improving user experience.
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

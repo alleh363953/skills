@@ -1,0 +1,808 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: playground
+- **路徑**: plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground
+
+## 2. 檔案結構 (File Tree)
+```text
+    SKILL.md
+    templates/
+        code-map.md
+        concept-map.md
+        data-explorer.md
+        design-playground.md
+        diff-review.md
+        document-critique.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- 反除錯/反沙盒 (Sleep/UserInteraction)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\code-map.md
+- 反除錯/反沙盒 (Sleep/UserInteraction)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\concept-map.md
+- 反除錯/反沙盒 (Sleep/UserInteraction)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\diff-review.md
+- 反除錯/反沙盒 (Sleep/UserInteraction)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\document-critique.md
+- 硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\data-explorer.md
+- 背景常駐/排程任務 (Persistence)：plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\data-explorer.md
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: playground
+description: Creates interactive HTML playgrounds — self-contained single-file explorers that let users configure something visually through controls, see a live preview, and copy out a prompt. Use when the user asks to make a playground, explorer, or interactive tool for a topic.
+---
+
+# Playground Builder
+
+A playground is a self-contained HTML file with interactive controls on one side, a live preview on the other, and a prompt output at the bottom with a copy button. The user adjusts controls, explores visually, then copies the generated prompt back into Claude.
+
+## When to use this skill
+
+When the user asks for an interactive playground, explorer, or visual tool for a topic — especially when the input space is large, visual, or structural and hard to express as plain text.
+
+## How to use this skill
+
+1. **Identify the playground type** from the user's request
+2. **Load the matching template** from `templates/`:
+   - `templates/design-playground.md` — Visual design decisions (components, layouts, spacing, color, typography)
+   - `templates/data-explorer.md` — Data and query building (SQL, APIs, pipelines, regex)
+   - `templates/concept-map.md` — Learning and exploration (concept maps, knowledge gaps, scope mapping)
+   - `templates/document-critique.md` — Document review (suggestions with approve/reject/comment workflow)
+   - `templates/diff-review.md` — Code review (git diffs, commits, PRs with line-by-line commenting)
+   - `templates/code-map.md` — Codebase architecture (component relationships, data flow, layer diagrams)
+3. **Follow the template** to build the playground. If the topic doesn't fit any template cleanly, use the one closest and adapt.
+4. **Open in browser.** After writing the HTML file, run `open <filename>.html` to launch it in the user's default browser.
+
+## Core requirements (every playground)
+
+- **Single HTML file.** Inline all CSS and JS. No external dependencies.
+- **Live preview.** Updates instantly on every control change. No "Apply" button.
+- **Prompt output.** Natural language, not a value dump. Only mentions non-default choices. Includes enough context to act on without seeing the playground. Updates live.
+- **Copy button.** Clipboard copy with brief "Copied!" feedback.
+- **Sensible defaults + presets.** Looks good on first load. Include 3-5 named presets that snap all controls to a cohesive combination.
+- **Dark theme.** System font for UI, monospace for code/values. Minimal chrome.
+
+## State management pattern
+
+Keep a single state object. Every control writes to it, every render reads from it.
+
+```javascript
+const state = { /* all configurable values */ };
+
+function updateAll() {
+  renderPreview(); // update the visual
+  updatePrompt();  // rebuild the prompt text
+}
+// Every control calls updateAll() on change
+```
+
+## Prompt output pattern
+
+```javascript
+function updatePrompt() {
+  const parts = [];
+
+  // Only mention non-default values
+  if (state.borderRadius !== DEFAULTS.borderRadius) {
+    parts.push(`border-radius of ${state.borderRadius}px`);
+  }
+
+  // Use qualitative language alongside numbers
+  if (state.shadowBlur > 16) parts.push('a pronounced shadow');
+  else if (state.shadowBlur > 0) parts.push('a subtle shadow');
+
+  prompt.textContent = `Update the card to use ${parts.join(', ')}.`;
+}
+```
+
+## Common mistakes to avoid
+
+- Prompt output is just a value dump → write it as a natural instruction
+- Too many controls at once → group by concern, hide advanced in a collapsible section
+- Preview doesn't update instantly → every control change must trigger immediate re-render
+- No defaults or presets → starts empty or broken on load
+- External dependencies → if CDN is down, playground is dead
+- Prompt lacks context → include enough that it's actionable without the playground
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\concept-map.md
+```python
+# Concept Map Template
+
+Use this template when the playground is about learning, exploration, or mapping relationships: concept maps, knowledge gap identification, scope mapping, task decomposition with dependencies.
+
+## Layout
+
+```
++--------------------------------------+
+|  Canvas (draggable nodes, edges)     |
+|  with tooltip on hover               |
++-------------------------+------------+
+|                         |            |
+|  Sidebar:               | Prompt     |
+|  • Knowledge levels     | output     |
+|  • Connection types     |            |
+|  • Node list            | [Copy]     |
+|  • Actions              |            |
++-------------------------+------------+
+```
+
+Canvas-based playgrounds differ from the two-panel split. The interactive visual IS the control — users drag nodes and draw connections rather than adjusting sliders. The sidebar supplements with toggles and list controls.
+
+## Control types for concept maps
+
+| Decision | Control | Example |
+|---|---|---|
+| Knowledge level per node | Click-to-cycle button in sidebar list | Know → Fuzzy → Unknown |
+| Connection type | Selector before drawing | calls, depends on, contains, reads from |
+| Node arrangement | Drag on canvas | spatial layout reflects mental model |
+| Which nodes to include | Toggle or checkbox per node | hide/show concepts |
+| Actions | Buttons | Auto-layout (force-directed), clear edges, reset |
+
+## Canvas rendering
+
+Use a `<canvas>` element with manual draw calls. Key patterns:
+
+- **Hit testing:** Check mouse position against node bounding circles on mousedown/mousemove
+- **Drag:** On mousedown on a node, track offset and update position on mousemove
+- **Edge drawing:** Click node A, then click node B. Draw arrow between them with the selected relationship type
+- **Tooltips:** On hover, position a div absolutely over the canvas with description text
+- **Force-directed auto-layout:** Simple spring simulation — repulsion between all pairs, attraction along edges, iterate 100-200 times with damping
+
+```javascript
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  edges.forEach(e => drawEdge(e));  // edges first, under nodes
+  nodes.forEach(n => drawNode(n));  // nodes on top
+}
+```
+
+## Prompt output for concept maps
+
+The prompt should be a targeted learning request shaped by the user's knowledge markings:
+
+> "I'm learning [CODEBASE/DOMAIN]. I already understand: [know nodes]. I'm fuzzy on: [fuzzy nodes]. I have no idea about: [unknown nodes]. Here are the relationships I want to understand: [edge list in natural language]. Please explain the fuzzy and unknown concepts, focusing on these relationships. Build on what I already know. Use concrete code references."
+
+Only include edges the user drew. Only mention concepts they marked as fuzzy or unknown in the explanation request.
+
+## Pre-populating with real data
+
+For codebases or domains, pre-populate with:
+- **Nodes:** 15-20 key concepts with real file paths and short descriptions
+- **Edges:** 20-30 pre-drawn relationships based on actual architecture
+- **Knowledge:** Default all to "Fuzzy" so the user adjusts from there
+- **Presets:** "Zoom out" (hide internal nodes, show only top-level), "Focus on [layer]" (highlight nodes in one area)
+
+## Example topics
+
+- Codebase architecture map (modules, data flow, state management)
+- Framework learning (how React hooks connect, Next.js data fetching layers)
+- System design (services, databases, queues, caches and how they relate)
+- Task decomposition (goals → sub-tasks with dependency arrows, knowledge tags)
+- API surface map (endpoints grouped by resource, shared middleware, auth layers)
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\document-critique.md
+```python
+# Document Critique Template
+
+Use this template when the playground helps review and critique documents: SKILL.md files, READMEs, specs, proposals, or any text that needs structured feedback with approve/reject/comment workflow.
+
+## Layout
+
+```
++---------------------------+--------------------+
+|                           |                    |
+|  Document content         |  Suggestions panel |
+|  with line numbers        |  (filterable list) |
+|  and suggestion           |  • Approve         |
+|  highlighting             |  • Reject          |
+|                           |  • Comment         |
+|                           |                    |
++---------------------------+--------------------+
+|  Prompt output (approved + commented items)    |
+|  [ Copy Prompt ]                               |
++------------------------------------------------+
+```
+
+## Key components
+
+### Document panel (left)
+- Display full document with line numbers
+- Highlight lines with suggestions using a colored left border
+- Color-code by status: pending (amber), approved (green), rejected (red with opacity)
+- Click a suggestion card to scroll to the relevant line
+
+### Suggestions panel (right)
+- Filter tabs: All / Pending / Approved / Rejected
+- Stats in header showing counts for each status
+- Each suggestion card shows:
+  - Line reference (e.g., "Line 3" or "Lines 17-24")
+  - The suggestion text
+  - Action buttons: Approve / Reject / Comment (or Reset if already decided)
+  - Optional textarea for user comments
+
+### Prompt output (bottom)
+- Generates a prompt only from approved suggestions and user comments
+- Groups by: Approved Improvements, Additional Feedback, Rejected (for context)
+- Copy button with "Copied!" feedback
+
+## State structure
+
+```javascript
+const suggestions = [
+  {
+    id: 1,
+    lineRef: "Line 3",
+    targetText: "description: Creates interactive...",
+    suggestion: "The description is too long. Consider shortening.",
+    category: "clarity",  // clarity, completeness, performance, accessibility, ux
+    status: "pending",    // pending, approved, rejected
+    userComment: ""
+  },
+  // ... more suggestions
+];
+
+let state = {
+  suggestions: [...],
+  activeFilter: "all",
+  activeSuggestionId: null
+};
+```
+
+## Suggestion matching to lines
+
+Match suggestions to document lines by parsing the lineRef:
+
+```javascript
+const suggestion = state.suggestions.find(s => {
+  const match = s.lineRef.match(/Line[s]?\s*(\d+)/);
+  if (match) {
+    const targetLine = parseInt(match[1]);
+    return Math.abs(targetLine - lineNum) <= 2; // fuzzy match nearby lines
+  }
+  return false;
+});
+```
+
+## Document rendering
+
+Handle markdown-style formatting inline:
+
+```javascript
+// Skip ``` lines, wrap content in code-block-wrapper
+if (line.startsWith('```')) {
+  inCodeBlock = !inCodeBlock;
+  // Open or close wrapper div
+}
+
+// Headers
+if (line.startsWith('# ')) renderedLine = `<h1>...</h1>`;
+if (line.startsWith('## ')) renderedLine = `<h2>...</h2>`;
+
+// Inline formatting (outside code blocks)
+renderedLine = renderedLine.replace(/`([^`]+)`/g, '<code>$1</code>');
+renderedLine = renderedLine.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+```
+
+## Prompt output generation
+
+Only include actionable items:
+
+```javascript
+function updatePrompt() {
+  const approved = state.suggestions.filter(s => s.status === 'approved');
+  const withComments = state.suggestions.filter(s => s.userComment?.trim());
+
+  if (approved.length === 0 && withComments.length === 0) {
+    // Show placeholder
+    return;
+  }
+
+  let prompt = 'Please update [DOCUMENT] with the following changes:\n\n';
+
+  if (approved.length > 0) {
+    prompt += '## Approved Improvements\n\n';
+    for (const s of approved) {
+      prompt += `**${s.lineRef}:** ${s.suggestion}`;
+      if (s.userComment?.trim()) {
+        prompt += `\n  → User note: ${s.userComment.trim()}`;
+      }
+      prompt += '\n\n';
+    }
+  }
+
+  // Additional feedback from non-approved items with comments
+  // Rejected items listed for context only
+}
+```
+
+## Styling highlights
+
+```css
+.doc-line.has-suggestion {
+  border-left: 3px solid #bf8700;  /* amber for pending */
+  background: rgba(191, 135, 0, 0.08);
+}
+
+.doc-line.approved {
+  border-left-color: #1a7f37;  /* green */
+  background: rgba(26, 127, 55, 0.08);
+}
+
+.doc-line.rejected {
+  border-left-color: #cf222e;  /* red */
+  background: rgba(207, 34, 46, 0.08);
+  opacity: 0.6;
+}
+```
+
+## Pre-populating suggestions
+
+When building a critique playground for a specific document:
+
+1. Read the document content
+2. Analyze and generate suggestions with:
+   - Specific line references
+   - Clear, actionable suggestion text
+   - Category tags (clarity, completeness, performance, accessibility, ux)
+3. Embed both the document content and suggestions array in the HTML
+
+## Example use cases
+
+- SKILL.md review (skill definition quality, completeness, clarity)
+- README critique (documentation quality, missing sections, unclear explanations)
+- Spec review (requirements clarity, missing edge cases, ambiguity)
+- Proposal feedback (structure, argumentation, missing context)
+- Code comment review (docstring quality, inline comment usefulness)
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\code-map.md
+```python
+# Code Map Template
+
+Use this template when the playground is about visualizing codebase architecture: component relationships, data flow, layer diagrams, system architecture with interactive commenting for feedback.
+
+## Layout
+
+```
++-------------------+----------------------------------+
+|                   |                                  |
+|  Controls:        |  SVG Canvas                      |
+|  • View presets   |  (nodes + connections)           |
+|  • Layer toggles  |  with zoom controls              |
+|  • Connection     |                                  |
+|    type filters   |  Legend (bottom-left)            |
+|                   |                                  |
+|  Comments (n):    +----------------------------------+
+|  • List of user   |  Prompt output                   |
+|    comments with  |  [ Copy Prompt ]                 |
+|    delete buttons |                                  |
++-------------------+----------------------------------+
+```
+
+Code map playgrounds use an SVG canvas for the architecture diagram. Users click components to add comments, which become part of the generated prompt. Layer and connection filters let users focus on specific parts of the system.
+
+## Control types for code maps
+
+| Decision | Control | Example |
+|---|---|---|
+| System view | Preset buttons | Full System, Chat Flow, Data Flow, Agent System |
+| Visible layers | Checkboxes | Client, Server, SDK, Data, External |
+| Connection types | Checkboxes with color indicators | Data Flow (blue), Tool Calls (green), Events (red) |
+| Component feedback | Click-to-comment modal | Opens modal with textarea for feedback |
+| Zoom level | +/−/reset buttons | Scale SVG for detail |
+
+## Canvas rendering
+
+Use an `<svg>` element with dynamically generated nodes and paths. Key patterns:
+
+- **Nodes:** Rounded rectangles with title and subtitle (file path)
+- **Connections:** Curved paths (bezier) with arrow markers, styled by type
+- **Layer organization:** Group nodes by Y-position bands (e.g., y: 30-80 = Client, y: 130-180 = Server)
+- **Click-to-comment:** Click node → open modal → save comment → node gets visual indicator
+- **Filtering:** Toggle visibility of nodes by layer, connections by type
+
+```javascript
+const nodes = [
+  { id: 'api-client', label: 'API Client', subtitle: 'src/api/client.ts',
+    x: 100, y: 50, w: 140, h: 45, layer: 'client', color: '#dbeafe' },
+  // ...
+];
+
+const connections = [
+  { from: 'api-client', to: 'server', type: 'data-flow', label: 'HTTP' },
+  { from: 'server', to: 'db', type: 'data-flow' },
+  // ...
+];
+
+function renderDiagram() {
+  const visibleNodes = nodes.filter(n => state.layers[n.layer]);
+  // Draw connections first (under nodes), then nodes
+  connections.forEach(c => drawConnection(c));
+  visibleNodes.forEach(n => drawNode(n));
+}
+```
+
+## Connection types and styling
+
+Define 3-5 connection types with distinct visual styles:
+
+| Type | Color | Style | Use for |
+|---|---|---|---|
+| `data-flow` | Blue (#3b82f6) | Solid line | Request/response, data passing |
+| `tool-call` | Green (#10b981) | Dashed (6,3) | Function calls, API invocations |
+| `event` | Red (#ef4444) | Short dash (4,4) | Async events, pub/sub |
+| `skill-invoke` | Orange (#f97316) | Long dash (8,4) | Plugin/skill activation |
+| `dependency` | Gray (#6b7280) | Dotted | Import/require relationships |
+
+Use SVG markers for arrowheads:
+
+```html
+<marker id="arrowhead-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+  <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+</marker>
+```
+
+## Comment system
+
+The key differentiator for code maps is click-to-comment functionality:
+
+1. **Click node** → Open modal with component name, file path, textarea
+2. **Save comment** → Add to comments list, mark node with visual indicator (colored border)
+3. **View comments** → Sidebar list with component name, comment preview, delete button
+4. **Delete comment** → Remove from list, update node visual, regenerate prompt
+
+Comments should include the component context:
+
+```javascript
+state.comments.push({
+  id: Date.now(),
+  target: node.id,
+  targetLabel: node.label,
+  targetFile: node.subtitle,
+  text: userInput
+});
+```
+
+## Prompt output for code maps
+
+The prompt combines system context with user comments:
+
+```
+This is the [PROJECT NAME] architecture, focusing on the [visible layers].
+
+Feedback on specific components:
+
+**API Client** (src/api/client.ts):
+I want to add retry logic with exponential backoff here.
+
+**Database Manager** (src/db/manager.ts):
+Can we add connection pooling? Current implementation creates new connections per request.
+
+**Auth Middleware** (src/middleware/auth.ts):
+This should validate JWT tokens and extract user context.
+```
+
+Only include comments the user added. Mention which layers are visible if not showing the full system.
+
+## Pre-populating with real data
+
+For a specific codebase, pre-populate with:
+
+- **Nodes:** 15-25 key components with real file paths
+- **Connections:** 20-40 relationships based on actual imports/calls
+- **Layers:** Logical groupings (UI, API, Business Logic, Data, External)
+- **Presets:** "Full System", "Frontend Only", "Backend Only", "Data Flow"
+
+Organize nodes in horizontal bands by layer, with consistent spacing.
+
+## Layer color palette (light theme)
+
+| Layer | Node fill | Description |
+|---|---|---|
+| Client/UI | #dbeafe (blue-100) | React components, hooks, pages |
+| Server/API | #fef3c7 (amber-100) | Express routes, middleware, handlers |
+| SDK/Core | #f3e8ff (purple-100) | Core libraries, SDK wrappers |
+| Agent/Logic | #dcfce7 (green-100) | Business logic, agents, processors |
+| Data | #fce7f3 (pink-100) | Database, cache, storage |
+| External | #fbcfe8 (pink-200) | Third-party services, APIs |
+
+## Example topics
+
+- Codebase architecture explorer (modules, imports, data flow)
+- Microservices map (services, queues, databases, API gateways)
+- React component tree (components, hooks, context, state)
+- API architecture (routes, middleware, controllers, models)
+- Agent system (prompts, tools, skills, subagents)
+- Data pipeline (sources, transforms, sinks, scheduling)
+- Plugin/extension architecture (core, plugins, hooks, events)
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\data-explorer.md
+```python
+# Data Explorer Template
+
+Use this template when the playground is about data queries, APIs, pipelines, or structured configuration: SQL builders, API designers, regex builders, pipeline visuals, cron schedules.
+
+## Layout
+
+```
++-------------------+----------------------+
+|                   |                      |
+|  Controls         |  Formatted output    |
+|  grouped by:      |  (syntax-highlighted |
+|  • Source/tables  |   code, or a         |
+|  • Columns/fields |   visual diagram)    |
+|  • Filters        |                      |
+|  • Grouping       |                      |
+|  • Ordering       |                      |
+|  • Limits         |                      |
+|                   +----------------------+
+|                   |  Prompt output       |
+|                   |  [ Copy Prompt ]     |
++-------------------+----------------------+
+```
+
+## Control types by decision
+
+| Decision | Control | Example |
+|---|---|---|
+| Select from available items | Clickable cards/chips | table names, columns, HTTP methods |
+| Add filter/condition rows | Add button → row of dropdowns + input | WHERE column op value |
+| Join type or aggregation | Dropdown per row | INNER/LEFT/RIGHT, COUNT/SUM/AVG |
+| Limit/offset | Slider | result count 1–500 |
+| Ordering | Dropdown + ASC/DESC toggle | order by column |
+| On/off features | Toggle | show descriptions, include header |
+
+## Preview rendering
+
+Render syntax-highlighted output using `<span>` tags with color classes:
+
+```javascript
+function renderPreview() {
+  const el = document.getElementById('preview');
+  // Color-code by token type
+  el.innerHTML = sql
+    .replace(/\b(SELECT|FROM|WHERE|JOIN|ON|GROUP BY|ORDER BY|LIMIT)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(users|orders|products)\b/g, '<span class="tbl">$1</span>')
+    .replace(/'[^']*'/g, '<span class="str">$&</span>');
+}
+```
+
+For pipeline-style playgrounds, render a horizontal or vertical flow diagram using positioned divs with arrow connectors.
+
+## Prompt output for data
+
+Frame it as a specification of what to build, not the raw query itself:
+
+> "Write a SQL query that joins orders to users on user_id, filters for orders after 2024-01-01 with total > $50, groups by user, and returns the top 10 users by order count."
+
+Include the schema context (table names, column types) so the prompt is self-contained.
+
+## Example topics
+
+- SQL query builder (tables, joins, filters, group by, order by, limit)
+- API endpoint designer (routes, methods, request/response field builder)
+- Data transformation pipeline (source → filter → map → aggregate → output)
+- Regex builder (sample strings, match groups, live highlight)
+- Cron schedule builder (visual timeline, interval, day toggles)
+- GraphQL query builder (type selection, field picker, nested resolvers)
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\playground\skills\playground\templates\diff-review.md
+```python
+# Diff Review Template
+
+Use this template when the playground is about reviewing code diffs: git commits, pull requests, code changes with interactive line-by-line commenting for feedback.
+
+## Layout
+
+```
++-------------------+----------------------------------+
+|                   |                                  |
+|  Commit Header:   |  Diff Content                    |
+|  • Hash           |  (files with hunks)              |
+|  • Message        |  with line numbers               |
+|  • Author/Date    |  and +/- indicators              |
+|                   |                                  |
++-------------------+----------------------------------+
+|  Prompt Output Panel (fixed bottom-right)            |
+|  [ Copy All ]                                        |
+|  Shows all comments formatted for prompt             |
++------------------------------------------------------+
+```
+
+Diff review playgrounds display git diffs with syntax highlighting. Users click lines to add comments, which become part of the generated prompt for code review feedback.
+
+## Control types for diff review
+
+| Feature | Control | Behavior |
+|---|---|---|
+| Line commenting | Click any diff line | Opens textarea below the line |
+| Comment indicator | Badge on commented lines | Shows which lines have feedback |
+| Save/Cancel | Buttons in comment box | Persist or discard comment |
+| Copy prompt | Button in prompt panel | Copies all comments to clipboard |
+
+## Diff rendering
+
+Parse diff data into structured format for rendering:
+
+```javascript
+const diffData = [
+  {
+    file: "path/to/file.py",
+    hunks: [
+      {
+        header: "@@ -41,13 +41,13 @@ function context",
+        lines: [
+          { type: "context", oldNum: 41, newNum: 41, content: "unchanged line" },
+          { type: "deletion", oldNum: 42, newNum: null, content: "removed line" },
+          { type: "addition", oldNum: null, newNum: 42, content: "added line" },
+        ]
+      }
+    ]
+  }
+];
+```
+
+## Line type styling
+
+| Type | Background | Text Color | Prefix |
+|---|---|---|---|
+| `context` | transparent | default | ` ` (space) |
+| `addition` | green tint (#dafbe1 light / rgba(46,160,67,0.15) dark) | green (#1a7f37 light / #7ee787 dark) | `+` |
+| `deletion` | red tint (#ffebe9 light / rgba(248,81,73,0.15) dark) | red (#cf222e light / #f85149 dark) | `-` |
+| `hunk-header` | blue tint (#ddf4ff light) | blue (#0969da light) | `@@` |
+
+## Comment system
+
+Each diff line gets a unique identifier for comment tracking:
+
+```javascript
+const comments = {}; // { lineId: commentText }
+
+function selectLine(lineId, lineEl) {
+  // Deselect previous
+  document.querySelectorAll('.diff-line.selected').forEach(el =>
+    el.classList.remove('selected'));
+  document.querySelectorAll('.comment-box.active').forEach(el =>
+    el.classList.remove('active'));
+
+  // Select new
+  lineEl.classList.add('selected');
+  document.getElementById(`comment-box-${lineId}`).classList.add('active');
+}
+
+function saveComment(lineId) {
+  const textarea = document.getElementById(`textarea-${lineId}`);
+  const comment = textarea.value.trim();
+
+  if (comment) {
+    comments[lineId] = comment;
+  } else {
+    delete comments[lineId];
+  }
+
+  renderDiff(); // Re-render to show comment indicator
+  updatePromptOutput();
+}
+```
+
+## Prompt output format
+
+Generate a structured code review format:
+
+```javascript
+function updatePromptOutput() {
+  const commentKeys = Object.keys(comments);
+
+  if (commentKeys.length === 0) {
+    promptContent.innerHTML = '<span class="no-comments">Click on any line to add a comment...</span>';
+    return;
+  }
+
+  let output = 'Code Review Comments:\n\n';
+
+  commentKeys.forEach(lineId => {
+    const lineEl = document.querySelector(`[data-line-id="${lineId}"]`);
+    const file = lineEl.dataset.file;
+    const lineNum = lineEl.dataset.lineNum;
+    const content = lineEl.dataset.content;
+
+    output += `📍 ${file}:${lineNum}\n`;
+    output += `   Code: ${content.trim()}\n`;
+    output += `   Comment: ${comments[lineId]}\n\n`;
+  });
+
+  promptContent.textContent = output;
+}
+```
+
+## Data attributes for line elements
+
+Store metadata on each line element for prompt generation:
+
+```html
+<div class="diff-line addition"
+     data-line-id="0-1-5"
+     data-file="src/utils/handler.py"
+     data-line-num="45"
+     data-content="subagent_id = tracker.register()">
+```
+
+## Pre-populating with real data
+
+To create a diff viewer for a specific commit:
+
+1. Run `git show <commit> --format="%H%n%s%n%an%n%ad" -p`
+2. Parse the output into the `diffData` structure
+3. Include commit metadata in the header section
+
+## Theme support
+
+Support both light and dark modes:
+
+```css
+/* Light mode */
+body { background: #f6f8fa; color: #1f2328; }
+.file-card { background: #ffffff; border: 1px solid #d0d7de; }
+.diff-line.addition { background: #dafbe1; }
+.diff-line.deletion { background: #ffebe9; }
+
+/* Dark mode */
+body { background: #0d1117; color: #c9d1d9; }
+.file-card { background: #161b22; border: 1px solid #30363d; }
+.diff-line.addition { background: rgba(46, 160, 67, 0.15); }
+.diff-line.deletion { background: rgba(248, 81, 73, 0.15); }
+```
+
+## Interactive features
+
+- **Hover hint:** Show "Click to comment" tooltip on line hover
+- **Comment indicator:** Badge (💬) on lines with saved comments
+- **Toast notification:** "Copied to clipboard!" feedback on copy
+- **Edit existing:** Allow editing previously saved comments
+
+## Example topics
+
+- Git commit review (single commit diff with line comments)
+- Pull request review (multiple commits, file-level and line-level comments)
+- Code diff comparison (before/after refactoring)
+- Merge conflict resolution (showing both versions with annotations)
+- Code audit (security review with findings per line)
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

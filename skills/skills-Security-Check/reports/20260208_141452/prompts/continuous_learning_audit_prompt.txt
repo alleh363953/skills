@@ -1,0 +1,183 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: continuous-learning
+- **路徑**: skills\continuous-learning
+
+## 2. 檔案結構 (File Tree)
+```text
+    config.json
+    evaluate-session.sh
+    SKILL.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- https://x.com/affaanmustafa/status/2014040193557471352
+- 發現敏感設定檔：skills\continuous-learning\config.json (可能包含密鑰)
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: continuous-learning
+description: Automatically extract reusable patterns from Claude Code sessions and save them as learned skills for future use.
+---
+
+# Continuous Learning Skill
+
+Automatically evaluates Claude Code sessions on end to extract reusable patterns that can be saved as learned skills.
+
+## How It Works
+
+This skill runs as a **Stop hook** at the end of each session:
+
+1. **Session Evaluation**: Checks if session has enough messages (default: 10+)
+2. **Pattern Detection**: Identifies extractable patterns from the session
+3. **Skill Extraction**: Saves useful patterns to `~/.claude/skills/learned/`
+
+## Configuration
+
+Edit `config.json` to customize:
+
+```json
+{
+  "min_session_length": 10,
+  "extraction_threshold": "medium",
+  "auto_approve": false,
+  "learned_skills_path": "~/.claude/skills/learned/",
+  "patterns_to_detect": [
+    "error_resolution",
+    "user_corrections",
+    "workarounds",
+    "debugging_techniques",
+    "project_specific"
+  ],
+  "ignore_patterns": [
+    "simple_typos",
+    "one_time_fixes",
+    "external_api_issues"
+  ]
+}
+```
+
+## Pattern Types
+
+| Pattern | Description |
+|---------|-------------|
+| `error_resolution` | How specific errors were resolved |
+| `user_corrections` | Patterns from user corrections |
+| `workarounds` | Solutions to framework/library quirks |
+| `debugging_techniques` | Effective debugging approaches |
+| `project_specific` | Project-specific conventions |
+
+## Hook Setup
+
+Add to your `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "~/.claude/skills/continuous-learning/evaluate-session.sh"
+      }]
+    }]
+  }
+}
+```
+
+## Why Stop Hook?
+
+- **Lightweight**: Runs once at session end
+- **Non-blocking**: Doesn't add latency to every message
+- **Complete context**: Has access to full session transcript
+
+## Related
+
+- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Section on continuous learning
+- `/learn` command - Manual pattern extraction mid-session
+
+---
+
+## Comparison Notes (Research: Jan 2025)
+
+### vs Homunculus (github.com/humanplane/homunculus)
+
+Homunculus v2 takes a more sophisticated approach:
+
+| Feature | Our Approach | Homunculus v2 |
+|---------|--------------|---------------|
+| Observation | Stop hook (end of session) | PreToolUse/PostToolUse hooks (100% reliable) |
+| Analysis | Main context | Background agent (Haiku) |
+| Granularity | Full skills | Atomic "instincts" |
+| Confidence | None | 0.3-0.9 weighted |
+| Evolution | Direct to skill | Instincts → cluster → skill/command/agent |
+| Sharing | None | Export/import instincts |
+
+**Key insight from homunculus:**
+> "v1 relied on skills to observe. Skills are probabilistic—they fire ~50-80% of the time. v2 uses hooks for observation (100% reliable) and instincts as the atomic unit of learned behavior."
+
+### Potential v2 Enhancements
+
+1. **Instinct-based learning** - Smaller, atomic behaviors with confidence scoring
+2. **Background observer** - Haiku agent analyzing in parallel
+3. **Confidence decay** - Instincts lose confidence if contradicted
+4. **Domain tagging** - code-style, testing, git, debugging, etc.
+5. **Evolution path** - Cluster related instincts into skills/commands
+
+See: `/Users/affoon/Documents/tasks/12-continuous-learning-v2.md` for full spec.
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): skills\continuous-learning\config.json
+```python
+{
+  "min_session_length": 10,
+  "extraction_threshold": "medium",
+  "auto_approve": false,
+  "learned_skills_path": "~/.claude/skills/learned/",
+  "patterns_to_detect": [
+    "error_resolution",
+    "user_corrections",
+    "workarounds",
+    "debugging_techniques",
+    "project_specific"
+  ],
+  "ignore_patterns": [
+    "simple_typos",
+    "one_time_fixes",
+    "external_api_issues"
+  ]
+}
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

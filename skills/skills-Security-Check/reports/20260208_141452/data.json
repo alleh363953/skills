@@ -1,0 +1,939 @@
+{
+  "generated_at": "2026-02-08 14:14:54",
+  "root": "C:\\Users\\A\\.claude",
+  "workspace_summary": {
+    "total": 46,
+    "high": 2,
+    "medium": 20,
+    "low": 24,
+    "security_score": 0
+  },
+  "items": [
+    {
+      "skill": "stripe-best-practices",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\external_plugins\\stripe\\skills\\stripe-best-practices",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、23 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://docs.stripe.com/api/charges/create.md",
+        "https://docs.stripe.com/api/checkout/sessions.md",
+        "https://docs.stripe.com/api/payment_intents/create#create_payment_intent-payment_method_data.md",
+        "https://docs.stripe.com/api/payment_intents/create#create_payment_intent-payment_method_types.md",
+        "https://docs.stripe.com/api/setup_intents.md",
+        "https://docs.stripe.com/api/sources/object.md",
+        "https://docs.stripe.com/api/tokens.md",
+        "https://docs.stripe.com/billing/subscriptions/designing-integration.md",
+        "https://docs.stripe.com/billing/subscriptions/use-cases.md",
+        "https://docs.stripe.com/connect/account-capabilities.md",
+        "https://docs.stripe.com/connect/design-an-integration.md",
+        "https://docs.stripe.com/connect/integration-recommendations.md",
+        "https://docs.stripe.com/connect/migrate-to-controller-properties.md",
+        "https://docs.stripe.com/get-started/checklist/go-live.md",
+        "https://docs.stripe.com/get-started/data-migrations/pan-import.md",
+        "https://docs.stripe.com/payments-api/tour.md",
+        "https://docs.stripe.com/payments/checkout.md",
+        "https://docs.stripe.com/payments/payment-element.md",
+        "https://docs.stripe.com/payments/payment-element/migration.md",
+        "https://docs.stripe.com/payments/payment-intents/migration/charges.md",
+        "https://docs.stripe.com/payments/payment-methods/integration-options.md",
+        "https://docs.stripe.com/payments/paymentintents/lifecycle.md",
+        "https://docs.stripe.com/saas.md"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (23 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "claude-automation-recommender",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender",
+      "summary": "功能分析：共掃描 6 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender\\references\\hooks-patterns.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender\\references\\skills-reference.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "claude-md-improver",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver",
+      "summary": "功能分析：共掃描 4 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver\\references\\update-guidelines.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "example-skill",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\example-plugin\\skills\\example-skill",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "frontend-design",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\frontend-design\\skills\\frontend-design",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\frontend-design\\skills\\frontend-design\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "writing-hookify-rules",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\hookify\\skills\\writing-rules",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\hookify\\skills\\writing-rules\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "playground",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 2 項敏感操作、0 個外部連線、4 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\data-explorer.md",
+        "背景常駐/排程任務 (Persistence)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\data-explorer.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\code-map.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\concept-map.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\diff-review.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\document-critique.md"
+      ],
+      "package_installs": [],
+      "risk_level": "high",
+      "reasoning": "偵測到系統駐留/開機啟動設定",
+      "recommendation": "⚠️ 高度危險：不建議在含真實憑證或資產的環境安裝！僅可在隔離 VM / 拋棄式沙盒中測試。",
+      "ai_audit": null
+    },
+    {
+      "skill": "agent-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\agent-development",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\agent-development\\examples\\complete-agent-examples.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "command-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\command-development",
+      "summary": "功能分析：共掃描 11 個檔案。偵測到 0 項敏感操作、7 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://community.example.com",
+        "https://docs.example.com",
+        "https://git-scm.com/downloads",
+        "https://github.com/user/plugin/issues",
+        "https://nodejs.org/",
+        "https://releases.example.com/v$LATEST_VERSION",
+        "https://stedolan.github.io/jq/download/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (7 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "hook-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development",
+      "summary": "功能分析：共掃描 11 個檔案。偵測到 3 項敏感操作、1 個外部連線、2 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\examples\\validate-write.sh",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\advanced.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\migration.md"
+      ],
+      "network_activity": [
+        "https://docs.claude.com/en/docs/claude-code/hooks"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\advanced.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\scripts\\hook-linter.sh"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\patterns.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "mcp-integration",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 5 項敏感操作、17 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\examples\\http-server.json",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\examples\\stdio-server.json",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\references\\authentication.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\references\\server-types.md"
+      ],
+      "network_activity": [
+        "http://localhost:8080/mcp`",
+        "http://mcp.example.com/sse",
+        "https://${TENANT_ID}.api.example.com/mcp",
+        "https://api.example.com",
+        "https://api.example.com/mcp",
+        "https://api.example.com/mcp/health",
+        "https://api.example.com/tokens",
+        "https://api.production.com/mcp`",
+        "https://docs.claude.com/en/docs/claude-code/mcp",
+        "https://mcp.asana.com/sse",
+        "https://mcp.asana.com/sse`",
+        "https://mcp.example.com/sse",
+        "https://mcp.github.com/sse",
+        "https://mcp.github.com/sse`",
+        "https://mcp.jira.com/sse",
+        "https://modelcontextprotocol.io/",
+        "https://secure.example.com"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (17 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "plugin-settings",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings",
+      "summary": "功能分析：共掃描 8 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\examples\\read-settings-hook.sh",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\real-world-examples.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\real-world-examples.md"
+      ],
+      "package_installs": [
+        "brew install 安裝 (macOS)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\parsing-techniques.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "plugin-structure",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 2 項敏感操作、15 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\examples\\advanced-plugin.md"
+      ],
+      "network_activity": [
+        "https://company.com/devops",
+        "https://company.com/teams/devops",
+        "https://docs.company.com/plugins/devops",
+        "https://docs.example.com",
+        "https://docs.example.com/code-review",
+        "https://docs.example.com/plugins/code-quality",
+        "https://docs.example.com/plugins/my-plugin",
+        "https://example.com",
+        "https://github.com/company/devops-plugin.git",
+        "https://github.com/example/code-quality-plugin",
+        "https://github.com/janedev/code-review-assistant",
+        "https://github.com/user/plugin-name",
+        "https://github.com/user/plugin-name.git",
+        "https://janedeveloper.com",
+        "https://spdx.org/licenses/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\examples\\standard-plugin.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (15 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "skill-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 2 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development\\references\\skill-creator-original.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "backend-patterns",
+      "path": "skills\\backend-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\backend-patterns\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\backend-patterns\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\backend-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "clickhouse-io",
+      "path": "skills\\clickhouse-io",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\clickhouse-io\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "coding-standards",
+      "path": "skills\\coding-standards",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\coding-standards\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "continuous-learning",
+      "path": "skills\\continuous-learning",
+      "summary": "功能分析：共掃描 3 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "發現敏感設定檔：skills\\continuous-learning\\config.json (可能包含密鑰)"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "continuous-learning-v2",
+      "path": "skills\\continuous-learning-v2",
+      "summary": "功能分析：共掃描 6 個檔案。偵測到 1 項敏感操作、5 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "發現敏感設定檔：skills\\continuous-learning-v2\\config.json (可能包含密鑰)"
+      ],
+      "network_activity": [
+        "https://github.com/...",
+        "https://github.com/humanplane/homunculus",
+        "https://skill-creator.app",
+        "https://skill-creator.app/api",
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\continuous-learning-v2\\agents\\start-observer.sh"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (5 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-patterns",
+      "path": "skills\\django-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-patterns\\SKILL.md"
+      ],
+      "network_activity": [
+        "127.0.0.1"
+      ],
+      "obfuscation_signals": [
+        "地區/時區規避偵測：skills\\django-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含地區/時區判斷邏輯 (可能為逃避偵測)； 包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-security",
+      "path": "skills\\django-security",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、4 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\django-security\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-security\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://api.example.com",
+        "https://cdn.example.com",
+        "https://example.com",
+        "https://media.example.com"
+      ],
+      "obfuscation_signals": [
+        "疑似混淆/編碼 (Base64/Hex/XOR)：skills\\django-security\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "代碼包含混淆或編碼跡象 (Base64/Hex)； 包含大量外部連線 (4 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-tdd",
+      "path": "skills\\django-tdd",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-tdd\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "地區/時區規避偵測：skills\\django-tdd\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含地區/時區判斷邏輯 (可能為逃避偵測)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-verification",
+      "path": "skills\\django-verification",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、1 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\django-verification\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-verification\\SKILL.md"
+      ],
+      "network_activity": [
+        "http://localhost:8000/swagger/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\django-verification\\SKILL.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "eval-harness",
+      "path": "skills\\eval-harness",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "frontend-patterns",
+      "path": "skills\\frontend-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\frontend-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "golang-patterns",
+      "path": "skills\\golang-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\golang-patterns\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "golang-testing",
+      "path": "skills\\golang-testing",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "動態模組/代碼載入 (Eval/Import)：skills\\golang-testing\\SKILL.md",
+        "執行任意系統指令 (Shell/Subprocess)：skills\\golang-testing\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\golang-testing\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含任意系統指令執行 (Shell/Subprocess)； 使用動態代碼執行 (Eval/Import)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "iterative-retrieval",
+      "path": "skills\\iterative-retrieval",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\iterative-retrieval\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "java-coding-standards",
+      "path": "skills\\java-coding-standards",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "jpa-patterns",
+      "path": "skills\\jpa-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "notebooklm",
+      "path": "skills\\notebooklm",
+      "summary": "功能分析：共掃描 54 個檔案。偵測到 7 項敏感操作、38 個外部連線、8 個潛在混淆指標、2 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "加密貨幣錢包相關 (Wallet/Seed/Mnemonic)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\english_wikipedia.txt",
+        "加密貨幣錢包相關 (Wallet/Seed/Mnemonic)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\surnames.txt",
+        "存取環境變數 (Env Vars)：skills\\notebooklm\\README.md",
+        "存取環境變數 (Env Vars)：skills\\notebooklm\\requirements.txt",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\README.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\passwords.txt",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\us_tv_and_film.txt"
+      ],
+      "network_activity": [
+        "0.0.0.000",
+        "1.1.0.3",
+        "http://proxy:port",
+        "https://...",
+        "https://clients2.google.com/service/update2/crx",
+        "https://creativecommons.org/.",
+        "https://creativecommons.org/compatiblelicenses",
+        "https://easylist.to/",
+        "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python#anti-detection",
+        "https://github.com/PleasePrompto/notebooklm-mcp",
+        "https://github.com/PleasePrompto/notebooklm-skill",
+        "https://github.com/anthropics/claude-code",
+        "https://github.com/easylist",
+        "https://github.com/microsoft/playwright/issues/14949",
+        "https://github.com/microsoft/playwright/issues/36139",
+        "https://img.shields.io/badge/Based%20on-NotebookLM%20MCP-green.svg",
+        "https://img.shields.io/badge/Claude%20Code-Skill-purple.svg",
+        "https://img.shields.io/badge/Python-3.8+-blue.svg",
+        "https://img.shields.io/github/stars/PleasePrompto/notebooklm-skill?style=social",
+        "https://issuer.captchafox.com",
+        "https://keepachangelog.com/en/1.0.0/",
+        "https://my.contentpass.net",
+        "https://notebooklm.google.com",
+        "https://notebooklm.google.com/...",
+        "https://notebooklm.google.com/notebook/...",
+        "https://notebooklm.google.com/notebook/...`",
+        "https://notebooklm.google.com/notebook/4db0d4e9-6f32-4794-a7ca-566ce8bfd636",
+        "https://notebooklm.google/",
+        "https://notebooklm\\.google\\.com/",
+        "https://privatetokens.dev",
+        "https://pst-issuer.hcaptcha.com",
+        "https://pst.authfy.tech",
+        "https://semver.org/spec/v2.0.0.html",
+        "https://stackoverflow.com/questions/79641481/",
+        "https://trusttoken.dev",
+        "https://www.amazon.com",
+        "https://www.anthropic.com/news/skills",
+        "https://www.python.org/"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\surnames.txt",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\us_tv_and_film.txt",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\references\\api_reference.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\references\\usage_patterns.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\ask_question.py",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\browser_session.py",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\browser_utils.py",
+        "地區/時區規避偵測：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\english_wikipedia.txt"
+      ],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\notebooklm\\README.md",
+        "pip install 安裝 (Python)：skills\\notebooklm\\SKILL.md"
+      ],
+      "risk_level": "high",
+      "reasoning": "偵測到加密貨幣錢包或私鑰存取路徑； 包含地區/時區判斷邏輯 (可能為逃避偵測)； 包含大量外部連線 (36 個)",
+      "recommendation": "⚠️ 高度危險：不建議在含真實憑證或資產的環境安裝！僅可在隔離 VM / 拋棄式沙盒中測試。",
+      "ai_audit": null
+    },
+    {
+      "skill": "postgres-patterns",
+      "path": "skills\\postgres-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://github.com/supabase/agent-skills"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "project-guidelines-example",
+      "path": "skills\\project-guidelines-example",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、4 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "http://test",
+        "https://api.example.com",
+        "https://xxx.supabase.co",
+        "https://zenith.chat"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\project-guidelines-example\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (4 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "prompt-lookup",
+      "path": "skills\\prompt-lookup",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "python-patterns",
+      "path": "skills\\python-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\python-patterns\\SKILL.md"
+      ],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\python-patterns\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "python-testing",
+      "path": "skills\\python-testing",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\python-testing\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://api.example.com"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\python-testing\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "security-review",
+      "path": "skills\\security-review",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 4 項敏感操作、12 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\security-review\\SKILL.md",
+        "存取環境變數 (Env Vars)：skills\\security-review\\cloud-infrastructure-security.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\security-review\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\security-review\\cloud-infrastructure-security.md"
+      ],
+      "network_activity": [
+        "0.0.0.0",
+        "10.0.0.0",
+        "https://api.example.com;",
+        "https://aws.amazon.com/security/best-practices/",
+        "https://developers.cloudflare.com/security/",
+        "https://nextjs.org/docs/security",
+        "https://owasp.org/www-project-cloud-security/",
+        "https://owasp.org/www-project-top-ten/",
+        "https://portswigger.net/web-security",
+        "https://supabase.com/docs/guides/auth",
+        "https://www.cisecurity.org/benchmark/amazon_web_services",
+        "https://www.terraform.io/docs/cloud/guides/recommended-practices/"
+      ],
+      "obfuscation_signals": [
+        "疑似混淆/編碼 (Base64/Hex/XOR)：skills\\security-review\\SKILL.md"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\security-review\\SKILL.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "代碼包含混淆或編碼跡象 (Base64/Hex)； 包含大量外部連線 (10 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "skill-lookup",
+      "path": "skills\\skill-lookup",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-patterns",
+      "path": "skills\\springboot-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\springboot-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-security",
+      "path": "skills\\springboot-security",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\springboot-security\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-tdd",
+      "path": "skills\\springboot-tdd",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-verification",
+      "path": "skills\\springboot-verification",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "strategic-compact",
+      "path": "skills\\strategic-compact",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\strategic-compact\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "tdd-workflow",
+      "path": "skills\\tdd-workflow",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、2 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "http://localhost/api/markets",
+        "http://localhost/api/markets?limit=invalid"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\tdd-workflow\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "vercel-react-best-practices",
+      "path": "skills\\vercel-react-best-practices",
+      "summary": "功能分析：共掃描 58 個檔案。偵測到 0 項敏感操作、19 個外部連線、3 個潛在混淆指標、3 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://csstriggers.com/",
+        "https://example.com",
+        "https://gist.github.com/paulirish/5d52fb081b3570c81e3a",
+        "https://github.com/isaacs/node-lru-cache",
+        "https://github.com/shuding/better-all",
+        "https://jsfiddle.net/qw1jabsx/4/",
+        "https://nextjs.org",
+        "https://nextjs.org/docs/app/api-reference/functions/after",
+        "https://nextjs.org/docs/app/guides/authentication",
+        "https://react.dev",
+        "https://react.dev/learn/react-compiler",
+        "https://react.dev/reference/react/cache",
+        "https://react.dev/reference/react/useTransition",
+        "https://swr.vercel.app",
+        "https://vercel.com",
+        "https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast",
+        "https://vercel.com/blog/how-we-optimized-package-imports-in-next-js",
+        "https://vercel.com/docs/fluid-compute",
+        "https://x.com/shuding"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\AGENTS.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\rules\\advanced-use-latest.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\rules\\client-passive-event-listeners.md"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\vercel-react-best-practices\\AGENTS.md",
+        "npm install 安裝 (Node.js)：skills\\vercel-react-best-practices\\rules\\rendering-svg-precision.md",
+        "pnpm add 安裝 (Node.js)：skills\\vercel-react-best-practices\\README.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (19 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "verification-loop",
+      "path": "skills\\verification-loop",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\verification-loop\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\verification-loop\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    }
+  ]
+}

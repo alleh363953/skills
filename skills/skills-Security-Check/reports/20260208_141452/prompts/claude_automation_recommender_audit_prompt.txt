@@ -1,0 +1,985 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: claude-automation-recommender
+- **路徑**: plugins\marketplaces\claude-plugins-official\plugins\claude-code-setup\skills\claude-automation-recommender
+
+## 2. 檔案結構 (File Tree)
+```text
+    SKILL.md
+    references/
+        hooks-patterns.md
+        mcp-servers.md
+        plugins-reference.md
+        skills-reference.md
+        subagent-templates.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- 硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\marketplaces\claude-plugins-official\plugins\claude-code-setup\skills\claude-automation-recommender\references\hooks-patterns.md
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: claude-automation-recommender
+description: Analyze a codebase and recommend Claude Code automations (hooks, subagents, skills, plugins, MCP servers). Use when user asks for automation recommendations, wants to optimize their Claude Code setup, mentions improving Claude Code workflows, asks how to first set up Claude Code for a project, or wants to know what Claude Code features they should use.
+tools: Read, Glob, Grep, Bash
+---
+
+# Claude Automation Recommender
+
+Analyze codebase patterns to recommend tailored Claude Code automations across all extensibility options.
+
+**This skill is read-only.** It analyzes the codebase and outputs recommendations. It does NOT create or modify any files. Users implement the recommendations themselves or ask Claude separately to help build them.
+
+## Output Guidelines
+
+- **Recommend 1-2 of each type**: Don't overwhelm - surface the top 1-2 most valuable automations per category
+- **If user asks for a specific type**: Focus only on that type and provide more options (3-5 recommendations)
+- **Go beyond the reference lists**: The reference files contain common patterns, but use web search to find recommendations specific to the codebase's tools, frameworks, and libraries
+- **Tell users they can ask for more**: End by noting they can request more recommendations for any specific category
+
+## Automation Types Overview
+
+| Type | Best For |
+|------|----------|
+| **Hooks** | Automatic actions on tool events (format on save, lint, block edits) |
+| **Subagents** | Specialized reviewers/analyzers that run in parallel |
+| **Skills** | Packaged expertise, workflows, and repeatable tasks (invoked by Claude or user via `/skill-name`) |
+| **Plugins** | Collections of skills that can be installed |
+| **MCP Servers** | External tool integrations (databases, APIs, browsers, docs) |
+
+## Workflow
+
+### Phase 1: Codebase Analysis
+
+Gather project context:
+
+```bash
+# Detect project type and tools
+ls -la package.json pyproject.toml Cargo.toml go.mod pom.xml 2>/dev/null
+cat package.json 2>/dev/null | head -50
+
+# Check dependencies for MCP server recommendations
+cat package.json 2>/dev/null | grep -E '"(react|vue|angular|next|express|fastapi|django|prisma|supabase|stripe)"'
+
+# Check for existing Claude Code config
+ls -la .claude/ CLAUDE.md 2>/dev/null
+
+# Analyze project structure
+ls -la src/ app/ lib/ tests/ components/ pages/ api/ 2>/dev/null
+```
+
+**Key Indicators to Capture:**
+
+| Category | What to Look For | Informs Recommendations For |
+|----------|------------------|----------------------------|
+| Language/Framework | package.json, pyproject.toml, import patterns | Hooks, MCP servers |
+| Frontend stack | React, Vue, Angular, Next.js | Playwright MCP, frontend skills |
+| Backend stack | Express, FastAPI, Django | API documentation tools |
+| Database | Prisma, Supabase, raw SQL | Database MCP servers |
+| External APIs | Stripe, OpenAI, AWS SDKs | context7 MCP for docs |
+| Testing | Jest, pytest, Playwright configs | Testing hooks, subagents |
+| CI/CD | GitHub Actions, CircleCI | GitHub MCP server |
+| Issue tracking | Linear, Jira references | Issue tracker MCP |
+| Docs patterns | OpenAPI, JSDoc, docstrings | Documentation skills |
+
+### Phase 2: Generate Recommendations
+
+Based on analysis, generate recommendations across all categories:
+
+#### A. MCP Server Recommendations
+
+See [references/mcp-servers.md](references/mcp-servers.md) for detailed patterns.
+
+| Codebase Signal | Recommended MCP Server |
+|-----------------|------------------------|
+| Uses popular libraries (React, Express, etc.) | **context7** - Live documentation lookup |
+| Frontend with UI testing needs | **Playwright** - Browser automation/testing |
+| Uses Supabase | **Supabase MCP** - Direct database operations |
+| PostgreSQL/MySQL database | **Database MCP** - Query and schema tools |
+| GitHub repository | **GitHub MCP** - Issues, PRs, actions |
+| Uses Linear for issues | **Linear MCP** - Issue management |
+| AWS infrastructure | **AWS MCP** - Cloud resource management |
+| Slack workspace | **Slack MCP** - Team notifications |
+| Memory/context persistence | **Memory MCP** - Cross-session memory |
+| Sentry error tracking | **Sentry MCP** - Error investigation |
+| Docker containers | **Docker MCP** - Container management |
+
+#### B. Skills Recommendations
+
+See [references/skills-reference.md](references/skills-reference.md) for details.
+
+Create skills in `.claude/skills/<name>/SKILL.md`. Some are also available via plugins:
+
+| Codebase Signal | Skill | Plugin |
+|-----------------|-------|--------|
+| Building plugins | skill-development | plugin-dev |
+| Git commits | commit | commit-commands |
+| React/Vue/Angular | frontend-design | frontend-design |
+| Automation rules | writing-rules | hookify |
+| Feature planning | feature-dev | feature-dev |
+
+**Custom skills to create** (with templates, scripts, examples):
+
+| Codebase Signal | Skill to Create | Invocation |
+|-----------------|-----------------|------------|
+| API routes | **api-doc** (with OpenAPI template) | Both |
+| Database project | **create-migration** (with validation script) | User-only |
+| Test suite | **gen-test** (with example tests) | User-only |
+| Component library | **new-component** (with templates) | User-only |
+| PR workflow | **pr-check** (with checklist) | User-only |
+| Releases | **release-notes** (with git context) | User-only |
+| Code style | **project-conventions** | Claude-only |
+| Onboarding | **setup-dev** (with prereq script) | User-only |
+
+#### C. Hooks Recommendations
+
+See [references/hooks-patterns.md](references/hooks-patterns.md) for configurations.
+
+| Codebase Signal | Recommended Hook |
+|-----------------|------------------|
+| Prettier configured | PostToolUse: auto-format on edit |
+| ESLint/Ruff configured | PostToolUse: auto-lint on edit |
+| TypeScript project | PostToolUse: type-check on edit |
+| Tests directory exists | PostToolUse: run related tests |
+| `.env` files present | PreToolUse: block `.env` edits |
+| Lock files present | PreToolUse: block lock file edits |
+| Security-sensitive code | PreToolUse: require confirmation |
+
+#### D. Subagent Recommendations
+
+See [references/subagent-templates.md](references/subagent-templates.md) for templates.
+
+| Codebase Signal | Recommended Subagent |
+|-----------------|---------------------|
+| Large codebase (>500 files) | **code-reviewer** - Parallel code review |
+| Auth/payments code | **security-reviewer** - Security audits |
+| API project | **api-documenter** - OpenAPI generation |
+| Performance critical | **performance-analyzer** - Bottleneck detection |
+| Frontend heavy | **ui-reviewer** - Accessibility review |
+| Needs more tests | **test-writer** - Test generation |
+
+#### E. Plugin Recommendations
+
+See [references/plugins-reference.md](references/plugins-reference.md) for available plugins.
+
+| Codebase Signal | Recommended Plugin |
+|-----------------|-------------------|
+| General productivity | **anthropic-agent-skills** - Core skills bundle |
+| Document workflows | Install docx, xlsx, pdf skills |
+| Frontend development | **frontend-design** plugin |
+| Building AI tools | **mcp-builder** for MCP development |
+
+### Phase 3: Output Recommendations Report
+
+Format recommendations clearly. **Only include 1-2 recommendations per category** - the most valuable ones for this specific codebase. Skip categories that aren't relevant.
+
+```markdown
+## Claude Code Automation Recommendations
+
+I've analyzed your codebase and identified the top automations for each category. Here are my top 1-2 recommendations per type:
+
+### Codebase Profile
+- **Type**: [detected language/runtime]
+- **Framework**: [detected framework]
+- **Key Libraries**: [relevant libraries detected]
+
+---
+
+### 🔌 MCP Servers
+
+#### context7
+**Why**: [specific reason based on detected libraries]
+**Install**: `claude mcp add context7`
+
+---
+
+### 🎯 Skills
+
+#### [skill name]
+**Why**: [specific reason]
+**Create**: `.claude/skills/[name]/SKILL.md`
+**Invocation**: User-only / Both / Claude-only
+**Also available in**: [plugin-name] plugin (if applicable)
+```yaml
+---
+name: [skill-name]
+description: [what it does]
+disable-model-invocation: true  # for user-only
+---
+```
+
+---
+
+### ⚡ Hooks
+
+#### [hook name]
+**Why**: [specific reason based on detected config]
+**Where**: `.claude/settings.json`
+
+---
+
+### 🤖 Subagents
+
+#### [agent name]
+**Why**: [specific reason based on codebase patterns]
+**Where**: `.claude/agents/[name].md`
+
+---
+
+**Want more?** Ask for additional recommendations for any specific category (e.g., "show me more MCP server options" or "what other hooks would help?").
+
+**Want help implementing any of these?** Just ask and I can help you set up any of the recommendations above.
+```
+
+## Decision Framework
+
+### When to Recommend MCP Servers
+- External service integration needed (databases, APIs)
+- Documentation lookup for libraries/SDKs
+- Browser automation or testing
+- Team tool integration (GitHub, Linear, Slack)
+- Cloud infrastructure management
+
+### When to Recommend Skills
+
+- Document generation (docx, xlsx, pptx, pdf — also in plugins)
+- Frequently repeated prompts or workflows
+- Project-specific tasks with arguments
+- Applying templates or scripts to tasks (skills can bundle supporting files)
+- Quick actions invoked with `/skill-name`
+- Workflows that should run in isolation (`context: fork`)
+
+**Invocation control:**
+- `disable-model-invocation: true` — User-only (for side effects: deploy, commit, send)
+- `user-invocable: false` — Claude-only (for background knowledge)
+- Default (omit both) — Both can invoke
+
+### When to Recommend Hooks
+- Repetitive post-edit actions (formatting, linting)
+- Protection rules (block sensitive file edits)
+- Validation checks (tests, type checks)
+
+### When to Recommend Subagents
+- Specialized expertise needed (security, performance)
+- Parallel review workflows
+- Background quality checks
+
+### When to Recommend Plugins
+- Need multiple related skills
+- Want pre-packaged automation bundles
+- Team-wide standardization
+
+---
+
+## Configuration Tips
+
+### MCP Server Setup
+
+**Team sharing**: Check `.mcp.json` into repo so entire team gets same MCP servers
+
+**Debugging**: Use `--mcp-debug` flag to identify configuration issues
+
+**Prerequisites to recommend:**
+- GitHub CLI (`gh`) - enables native GitHub operations
+- Puppeteer/Playwright CLI - for browser MCP servers
+
+### Headless Mode (for CI/Automation)
+
+Recommend headless Claude for automated pipelines:
+
+```bash
+# Pre-commit hook example
+claude -p "fix lint errors in src/" --allowedTools Edit,Write
+
+# CI pipeline with structured output
+claude -p "<prompt>" --output-format stream-json | your_command
+```
+
+### Permissions for Hooks
+
+Configure allowed tools in `.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": ["Edit", "Write", "Bash(npm test:*)", "Bash(git commit:*)"]
+  }
+}
+```
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\claude-code-setup\skills\claude-automation-recommender\references\skills-reference.md
+```python
+# Skills Recommendations
+
+Skills are packaged expertise with workflows, reference materials, and best practices. Create them in `.claude/skills/<name>/SKILL.md`. Skills can be invoked by Claude automatically when relevant, or by users directly with `/skill-name`.
+
+Some pre-built skills are available through official plugins (install via `/plugin install`).
+
+**Note**: These are common patterns. Use web search to find skill ideas specific to the codebase's tools and frameworks.
+
+---
+
+## Available from Official Plugins
+
+### Plugin Development (plugin-dev)
+
+| Skill | Best For |
+|-------|----------|
+| **skill-development** | Creating new skills with proper structure |
+| **hook-development** | Building hooks for automation |
+| **command-development** | Creating slash commands |
+| **agent-development** | Building specialized subagents |
+| **mcp-integration** | Integrating MCP servers into plugins |
+| **plugin-structure** | Understanding plugin architecture |
+
+### Git Workflows (commit-commands)
+
+| Skill | Best For |
+|-------|----------|
+| **commit** | Creating git commits with proper messages |
+| **commit-push-pr** | Full commit, push, and PR workflow |
+
+### Frontend (frontend-design)
+
+| Skill | Best For |
+|-------|----------|
+| **frontend-design** | Creating polished UI components |
+
+**Value**: Creates distinctive, high-quality UI instead of generic AI aesthetics.
+
+### Automation Rules (hookify)
+
+| Skill | Best For |
+|-------|----------|
+| **writing-rules** | Creating hookify rules for automation |
+
+### Feature Development (feature-dev)
+
+| Skill | Best For |
+|-------|----------|
+| **feature-dev** | End-to-end feature development workflow |
+
+---
+
+## Quick Reference: Official Plugin Skills
+
+| Codebase Signal | Skill | Plugin |
+|-----------------|-------|--------|
+| Building plugins | skill-development | plugin-dev |
+| Git commits | commit | commit-commands |
+| React/Vue/Angular | frontend-design | frontend-design |
+| Automation rules | writing-rules | hookify |
+| Feature planning | feature-dev | feature-dev |
+
+---
+
+## Custom Project Skills
+
+Create project-specific skills in `.claude/skills/<name>/SKILL.md`.
+
+### Skill Structure
+
+```
+.claude/skills/
+└── my-skill/
+    ├── SKILL.md           # Main instructions (required)
+    ├── template.yaml      # Template to apply
+    ├── scripts/
+    │   └── validate.sh    # Script to run
+    └── examples/          # Reference examples
+```
+
+### Frontmatter Reference
+
+```yaml
+---
+name: skill-name
+description: What this skill does and when to use it
+disable-model-invocation: true  # Only user can invoke (for side effects)
+user-invocable: false           # Only Claude can invoke (for background knowledge)
+allowed-tools: Read, Grep, Glob # Restrict tool access
+context: fork                   # Run in isolated subagent
+agent: Explore                  # Which agent type when forked
+---
+```
+
+### Invocation Control
+
+| Setting | User | Claude | Use for |
+|---------|------|--------|---------|
+| (default) | ✓ | ✓ | General-purpose skills |
+| `disable-model-invocation: true` | ✓ | ✗ | Side effects (deploy, send) |
+| `user-invocable: false` | ✗ | ✓ | Background knowledge |
+
+---
+
+## Custom Skill Examples
+
+### API Documentation with OpenAPI Template
+
+Apply a YAML template to generate consistent API docs:
+
+```
+.claude/skills/api-doc/
+├── SKILL.md
+└── openapi-template.yaml
+```
+
+**SKILL.md:**
+```yaml
+---
+name: api-doc
+description: Generate OpenAPI documentation for an endpoint. Use when documenting API routes.
+---
+
+Generate OpenAPI documentation for the endpoint at $ARGUMENTS.
+
+Use the template in [openapi-template.yaml](openapi-template.yaml) as the structure.
+
+1. Read the endpoint code
+2. Extract path, method, parameters, request/response schemas
+3. Fill in the template with actual values
+4. Output the completed YAML
+```
+
+**openapi-template.yaml:**
+```yaml
+paths:
+  /{path}:
+    {method}:
+      summary: ""
+      description: ""
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema: {}
+```
+
+---
+
+### Database Migration Generator with Script
+
+Generate and validate migrations using a bundled script:
+
+```
+.claude/skills/create-migration/
+├── SKILL.md
+└── scripts/
+    └── validate-migration.sh
+```
+
+**SKILL.md:**
+```yaml
+---
+name: create-migration
+description: Create a database migration file
+disable-model-invocation: true
+allowed-tools: Read, Write, Bash
+---
+
+Create a migration for: $ARGUMENTS
+
+1. Generate migration file in `migrations/` with timestamp prefix
+2. Include up and down functions
+3. Run validation: `bash ~/.claude/skills/create-migration/scripts/validate-migration.sh`
+4. Report any issues found
+```
+
+**scripts/validate-migration.sh:**
+```bash
+#!/bin/bash
+# Validate migration syntax
+npx prisma validate 2>&1 || echo "Validation failed"
+```
+
+---
+
+### Test Generator with Examples
+
+Generate tests following project patterns:
+
+```
+.claude/skills/gen-test/
+├── SKILL.md
+└── examples/
+    ├── unit-test.ts
+    └── integration-test.ts
+```
+
+**SKILL.md:**
+```yaml
+---
+name: gen-test
+description: Generate tests for a file following project conventions
+disable-model-invocation: true
+---
+
+Generate tests for: $ARGUMENTS
+
+Reference these examples for the expected patterns:
+- Unit tests: [examples/unit-test.ts](examples/unit-test.ts)
+- Integration tests: [examples/integration-test.ts](examples/integration-test.ts)
+
+1. Analyze the source file
+2. Identify functions/methods to test
+3. Generate tests matching project conventions
+4. Place in appropriate test directory
+```
+
+---
+
+### Component Generator with Template
+
+Scaffold new components from a template:
+
+```
+.claude/skills/new-component/
+├── SKILL.md
+└── templates/
+    ├── component.tsx.template
+    ├── component.test.tsx.template
+    └── component.stories.tsx.template
+```
+
+**SKILL.md:**
+```yaml
+---
+name: new-component
+description: Scaffold a new React component with tests and stories
+disable-model-invocation: true
+---
+
+Create component: $ARGUMENTS
+
+Use templates in [templates/](templates/) directory:
+1. Generate component from component.tsx.template
+2. Generate tests from component.test.tsx.template
+3. Generate Storybook story from component.stories.tsx.template
+
+Replace {{ComponentName}} with the PascalCase name.
+Replace {{component-name}} with the kebab-case name.
+```
+
+---
+
+### PR Review with Checklist
+
+Review PRs against a project-specific checklist:
+
+```
+.claude/skills/pr-check/
+├── SKILL.md
+└── checklist.md
+```
+
+**SKILL.md:**
+```yaml
+---
+name: pr-check
+description: Review PR against project checklist
+disable-model-invocation: true
+context: fork
+---
+
+## PR Context
+- Diff: !`gh pr diff`
+- Description: !`gh pr view`
+
+Review against [checklist.md](checklist.md).
+
+For each item, mark ✅ or ❌ with explanation.
+```
+
+**checklist.md:**
+```markdown
+## PR Checklist
+
+- [ ] Tests added for new functionality
+- [ ] No console.log statements
+- [ ] Error handling includes user-facing messages
+- [ ] API changes are backwards compatible
+- [ ] Database migrations are reversible
+```
+
+---
+
+### Release Notes Generator
+
+Generate release notes from git history:
+
+**SKILL.md:**
+```yaml
+---
+name: release-notes
+description: Generate release notes from commits since last tag
+disable-model-invocation: true
+---
+
+## Recent Changes
+- Commits since last tag: !`git log $(git describe --tags --abbrev=0)..HEAD --oneline`
+- Last tag: !`git describe --tags --abbrev=0`
+
+Generate release notes:
+1. Group commits by type (feat, fix, docs, etc.)
+2. Write user-friendly descriptions
+3. Highlight breaking changes
+4. Format as markdown
+```
+
+---
+
+### Project Conventions (Claude-only)
+
+Background knowledge Claude applies automatically:
+
+**SKILL.md:**
+```yaml
+---
+name: project-conventions
+description: Code style and patterns for this project. Apply when writing or reviewing code.
+user-invocable: false
+---
+
+## Naming Conventions
+- React components: PascalCase
+- Utilities: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Files: kebab-case
+
+## Patterns
+- Use `Result<T, E>` for fallible operations, not exceptions
+- Prefer composition over inheritance
+- All API responses use `{ data, error, meta }` shape
+
+## Forbidden
+- No `any` types
+- No `console.log` in production code
+- No synchronous file I/O
+```
+
+---
+
+### Environment Setup
+
+Onboard new developers with setup script:
+
+```
+.claude/skills/setup-dev/
+├── SKILL.md
+└── scripts/
+    └── check-prerequisites.sh
+```
+
+**SKILL.md:**
+```yaml
+---
+name: setup-dev
+description: Set up development environment for new contributors
+disable-model-invocation: true
+---
+
+Set up development environment:
+
+1. Check prerequisites: `bash scripts/check-prerequisites.sh`
+2. Install dependencies: `npm install`
+3. Copy environment template: `cp .env.example .env`
+4. Set up database: `npm run db:setup`
+5. Verify setup: `npm test`
+
+Report any issues encountered.
+```
+
+---
+
+## Argument Patterns
+
+| Pattern | Meaning | Example |
+|---------|---------|---------|
+| `$ARGUMENTS` | All args as string | `/deploy staging` → "staging" |
+
+Arguments are appended as `ARGUMENTS: <value>` if `$ARGUMENTS` isn't in the skill.
+
+## Dynamic Context Injection
+
+Use `!`command`` to inject live data before the skill runs:
+
+```yaml
+## Current State
+- Branch: !`git branch --show-current`
+- Status: !`git status --short`
+```
+
+The command output replaces the placeholder before Claude sees the skill content.
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): plugins\marketplaces\claude-plugins-official\plugins\claude-code-setup\skills\claude-automation-recommender\references\hooks-patterns.md
+```python
+# Hooks Recommendations
+
+Hooks automatically run commands in response to Claude Code events. They're ideal for enforcement and automation that should happen consistently.
+
+**Note**: These are common patterns. Use web search to find hooks for tools/frameworks not listed here to recommend the best hooks for the user.
+
+## Auto-Formatting Hooks
+
+### Prettier (JavaScript/TypeScript)
+| Detection | File Exists |
+|-----------|-------------|
+| `.prettierrc`, `.prettierrc.json`, `prettier.config.js` | ✓ |
+
+**Recommend**: PostToolUse hook on Edit/Write to auto-format
+**Value**: Code stays formatted without thinking about it
+
+### ESLint (JavaScript/TypeScript)
+| Detection | File Exists |
+|-----------|-------------|
+| `.eslintrc`, `.eslintrc.json`, `eslint.config.js` | ✓ |
+
+**Recommend**: PostToolUse hook on Edit/Write to auto-fix
+**Value**: Lint errors fixed automatically
+
+### Black/isort (Python)
+| Detection | File Exists |
+|-----------|-------------|
+| `pyproject.toml` with black/isort, `.black`, `setup.cfg` | ✓ |
+
+**Recommend**: PostToolUse hook to format Python files
+**Value**: Consistent Python formatting
+
+### Ruff (Python - Modern)
+| Detection | File Exists |
+|-----------|-------------|
+| `ruff.toml`, `pyproject.toml` with `[tool.ruff]` | ✓ |
+
+**Recommend**: PostToolUse hook for lint + format
+**Value**: Fast, comprehensive Python linting
+
+### gofmt (Go)
+| Detection | File Exists |
+|-----------|-------------|
+| `go.mod` | ✓ |
+
+**Recommend**: PostToolUse hook to run gofmt
+**Value**: Standard Go formatting
+
+### rustfmt (Rust)
+| Detection | File Exists |
+|-----------|-------------|
+| `Cargo.toml` | ✓ |
+
+**Recommend**: PostToolUse hook to run rustfmt
+**Value**: Standard Rust formatting
+
+---
+
+## Type Checking Hooks
+
+### TypeScript
+| Detection | File Exists |
+|-----------|-------------|
+| `tsconfig.json` | ✓ |
+
+**Recommend**: PostToolUse hook to run tsc --noEmit
+**Value**: Catch type errors immediately
+
+### mypy/pyright (Python)
+| Detection | File Exists |
+|-----------|-------------|
+| `mypy.ini`, `pyrightconfig.json`, pyproject.toml with mypy | ✓ |
+
+**Recommend**: PostToolUse hook for type checking
+**Value**: Catch type errors in Python
+
+---
+
+## Protection Hooks
+
+### Block Sensitive File Edits
+| Detection | Presence Of |
+|-----------|-------------|
+| `.env`, `.env.local`, `.env.production` | Environment files |
+| `credentials.json`, `secrets.yaml` | Secret files |
+| `.git/` directory | Git internals |
+
+**Recommend**: PreToolUse hook that blocks Edit/Write to these paths
+**Value**: Prevent accidental secret exposure or git corruption
+
+### Block Lock File Edits
+| Detection | Presence Of |
+|-----------|-------------|
+| `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` | JS lock files |
+| `Cargo.lock`, `poetry.lock`, `Pipfile.lock` | Other lock files |
+
+**Recommend**: PreToolUse hook that blocks direct edits
+**Value**: Lock files should only change via package manager
+
+---
+
+## Test Runner Hooks
+
+### Jest (JavaScript/TypeScript)
+| Detection | Presence Of |
+|-----------|-------------|
+| `jest.config.js`, `jest` in package.json | Jest configured |
+| `__tests__/`, `*.test.ts`, `*.spec.ts` | Test files exist |
+
+**Recommend**: PostToolUse hook to run related tests after edit
+**Value**: Immediate test feedback on changes
+
+### pytest (Python)
+| Detection | Presence Of |
+|-----------|-------------|
+| `pytest.ini`, `pyproject.toml` with pytest | pytest configured |
+| `tests/`, `test_*.py` | Test files exist |
+
+**Recommend**: PostToolUse hook to run pytest on changed files
+**Value**: Immediate test feedback
+
+---
+
+## Quick Reference: Detection → Recommendation
+
+| If You See | Recommend This Hook |
+|------------|-------------------|
+| Prettier config | Auto-format on Edit/Write |
+| ESLint config | Auto-lint on Edit/Write |
+| Ruff/Black config | Auto-format Python |
+| tsconfig.json | Type-check on Edit |
+| Test directory | Run related tests on Edit |
+| .env files | Block .env edits |
+| Lock files | Block lock file edits |
+| Go project | gofmt on Edit |
+| Rust project | rustfmt on Edit |
+
+---
+
+## Notification Hooks
+
+Notification hooks run when Claude Code sends notifications. Use matchers to filter by notification type.
+
+### Permission Alerts
+| Matcher | Use Case |
+|---------|----------|
+| `permission_prompt` | Alert when Claude requests permissions |
+
+**Recommend**: Play sound, send desktop notification, or log permission requests
+**Value**: Never miss permission prompts when multitasking
+
+### Idle Notifications
+| Matcher | Use Case |
+|---------|----------|
+| `idle_prompt` | Alert when Claude is waiting for input (60+ seconds idle) |
+
+**Recommend**: Play sound or send notification when Claude needs attention
+**Value**: Know when Claude is ready for your input
+
+### Example Configuration
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude is waiting\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Available Matchers
+
+| Matcher | Triggers When |
+|---------|---------------|
+| `permission_prompt` | Claude needs permission for a tool |
+| `idle_prompt` | Claude waiting for input (60+ seconds) |
+| `auth_success` | Authentication succeeds |
+| `elicitation_dialog` | MCP tool needs input |
+
+---
+
+## Quick Reference: Detection → Recommendation
+
+| If You See | Recommend This Hook |
+|------------|-------------------|
+| Prettier config | Auto-format on Edit/Write |
+| ESLint config | Auto-lint on Edit/Write |
+| Ruff/Black config | Auto-format Python |
+| tsconfig.json | Type-check on Edit |
+| Test directory | Run related tests on Edit |
+| .env files | Block .env edits |
+| Lock files | Block lock file edits |
+| Go project | gofmt on Edit |
+| Rust project | rustfmt on Edit |
+| Multitasking workflow | Notification hooks for alerts |
+
+---
+
+## Hook Placement
+
+Hooks go in `.claude/settings.json`:
+
+```
+.claude/
+└── settings.json  ← Hook configurations here
+```
+
+Recommend creating the `.claude/` directory if it doesn't exist.
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

@@ -1,0 +1,166 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: springboot-security
+- **路徑**: skills\springboot-security
+
+## 2. 檔案結構 (File Tree)
+```text
+    SKILL.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- 硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\springboot-security\SKILL.md
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: springboot-security
+description: Spring Security best practices for authn/authz, validation, CSRF, secrets, headers, rate limiting, and dependency security in Java Spring Boot services.
+---
+
+# Spring Boot Security Review
+
+Use when adding auth, handling input, creating endpoints, or dealing with secrets.
+
+## Authentication
+
+- Prefer stateless JWT or opaque tokens with revocation list
+- Use `httpOnly`, `Secure`, `SameSite=Strict` cookies for sessions
+- Validate tokens with `OncePerRequestFilter` or resource server
+
+```java
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+  private final JwtService jwtService;
+
+  public JwtAuthFilter(JwtService jwtService) {
+    this.jwtService = jwtService;
+  }
+
+  @Override
+  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+      FilterChain chain) throws ServletException, IOException {
+    String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+    if (header != null && header.startsWith("Bearer ")) {
+      String token = header.substring(7);
+      Authentication auth = jwtService.authenticate(token);
+      SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+    chain.doFilter(request, response);
+  }
+}
+```
+
+## Authorization
+
+- Enable method security: `@EnableMethodSecurity`
+- Use `@PreAuthorize("hasRole('ADMIN')")` or `@PreAuthorize("@authz.canEdit(#id)")`
+- Deny by default; expose only required scopes
+
+## Input Validation
+
+- Use Bean Validation with `@Valid` on controllers
+- Apply constraints on DTOs: `@NotBlank`, `@Email`, `@Size`, custom validators
+- Sanitize any HTML with a whitelist before rendering
+
+## SQL Injection Prevention
+
+- Use Spring Data repositories or parameterized queries
+- For native queries, use `:param` bindings; never concatenate strings
+
+## CSRF Protection
+
+- For browser session apps, keep CSRF enabled; include token in forms/headers
+- For pure APIs with Bearer tokens, disable CSRF and rely on stateless auth
+
+```java
+http
+  .csrf(csrf -> csrf.disable())
+  .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+```
+
+## Secrets Management
+
+- No secrets in source; load from env or vault
+- Keep `application.yml` free of credentials; use placeholders
+- Rotate tokens and DB credentials regularly
+
+## Security Headers
+
+```java
+http
+  .headers(headers -> headers
+    .contentSecurityPolicy(csp -> csp
+      .policyDirectives("default-src 'self'"))
+    .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+    .xssProtection(Customizer.withDefaults())
+    .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)));
+```
+
+## Rate Limiting
+
+- Apply Bucket4j or gateway-level limits on expensive endpoints
+- Log and alert on bursts; return 429 with retry hints
+
+## Dependency Security
+
+- Run OWASP Dependency Check / Snyk in CI
+- Keep Spring Boot and Spring Security on supported versions
+- Fail builds on known CVEs
+
+## Logging and PII
+
+- Never log secrets, tokens, passwords, or full PAN data
+- Redact sensitive fields; use structured JSON logging
+
+## File Uploads
+
+- Validate size, content type, and extension
+- Store outside web root; scan if required
+
+## Checklist Before Release
+
+- [ ] Auth tokens validated and expired correctly
+- [ ] Authorization guards on every sensitive path
+- [ ] All inputs validated and sanitized
+- [ ] No string-concatenated SQL
+- [ ] CSRF posture correct for app type
+- [ ] Secrets externalized; none committed
+- [ ] Security headers configured
+- [ ] Rate limiting on APIs
+- [ ] Dependencies scanned and up to date
+- [ ] Logs free of sensitive data
+
+**Remember**: Deny by default, validate inputs, least privilege, and secure-by-configuration first.
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

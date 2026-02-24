@@ -1,0 +1,1869 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skill 資安審查 Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      /* Aurora Prism Palette */
+      --panel-bg: rgba(0, 0, 0, 0.2);
+      /* Very subtle to show grain */
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-main: #ffffff;
+      --text-muted: #b0b0b0;
+
+      --accent: #FFFFFF;
+      --accent-glow: 0 0 15px rgba(255, 255, 255, 0.4);
+
+      --danger: #FF3366;
+      --warn: #FFCC00;
+      --safe: #00FFCC;
+
+      --bg-color: #030005;
+      /* Deep, deep purple/black */
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-color);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    header {
+      padding: 1.5rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      /* Transparent header to merge with beam */
+      position: absolute;
+      width: 100%;
+      top: 0;
+      z-index: 100;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 0.2rem;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    main {
+      padding: 6rem 3rem 2rem;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 2rem;
+      max-width: 1800px;
+      margin: 0 auto;
+      height: 100vh;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      /* Lower blur to keep grain visible? Or high to smooth? */
+      /* Actually, glass usually needs blur. Let's keep it but subtle. */
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .sidebar-chart {
+      height: 200px;
+      margin-bottom: 2rem;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .canvas-center-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .total-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .total-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .skill-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .skill-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .skill-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .skill-item {
+      margin-bottom: 0.8rem;
+      padding: 1rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .skill-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .skill-item.active {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent);
+      border-left: 3px solid #fff;
+      border-radius: 4px 16px 16px 4px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .skill-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .skill-path {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .risk-dot {
+      width: 10px;
+      /* Slightly bigger */
+      height: 10px;
+      border-radius: 50%;
+      /* Brighter & Stronger Glow */
+      box-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+      opacity: 1;
+      /* Ensure full opacity */
+    }
+
+    /* Content Area */
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .content-area::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .content-area::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .dashboard-header {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      padding: 2rem;
+      backdrop-filter: blur(20px);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Elegant Underline */
+    .dashboard-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .detail-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      backdrop-filter: blur(20px);
+      transition: transform 0.3s;
+    }
+
+    .detail-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .detail-card h3 {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.75rem;
+      margin-top: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .detail-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .detail-list li {
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      border-left: 2px solid transparent;
+      transition: all 0.2s;
+
+      /* Fix Long URLs Overflow */
+      overflow-wrap: break-word;
+      word-break: break-all;
+      white-space: normal;
+    }
+
+    .detail-list li:hover {
+      border-left-color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .risk-high {
+      color: var(--danger);
+      text-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
+    }
+
+    .risk-medium {
+      color: var(--warn);
+      text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    }
+
+    .risk-low {
+      color: var(--safe);
+      text-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
+    }
+
+    /* --- New Features CSS --- */
+
+    /* Filters */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0 1.5rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 1rem;
+    }
+
+    .filter-tab {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .filter-tab:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .filter-tab.active {
+      background: #fff;
+      color: #000;
+      font-weight: 600;
+    }
+
+    /* AI Insight Card */
+    .ai-card {
+      background: linear-gradient(145deg, rgba(16, 20, 30, 0.8), rgba(50, 20, 40, 0.4));
+      border: 1px solid rgba(255, 50, 100, 0.3);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 1rem;
+      position: relative;
+      overflow: hidden;
+      animation: pulseBorder 4s infinite ease-in-out;
+    }
+
+    @keyframes pulseBorder {
+      0% {
+        border-color: rgba(255, 50, 100, 0.3);
+      }
+
+      50% {
+        border-color: rgba(255, 50, 100, 0.6);
+        box-shadow: 0 0 20px rgba(255, 50, 100, 0.1);
+      }
+
+      100% {
+        border-color: rgba(255, 50, 100, 0.3);
+      }
+    }
+
+    .ai-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255, 50, 100, 0.2);
+      color: #ff3366;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(255, 50, 100, 0.4);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ai-content {
+      line-height: 1.7;
+      color: #ddd;
+      font-size: 0.95rem;
+    }
+
+    .ai-content h1,
+    .ai-content h2,
+    .ai-content h3 {
+      color: #fff;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .ai-content code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #ffcc00;
+    }
+
+    .ai-content pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    /* Executive Summary */
+    .exec-summary {
+      display: none;
+      /* Hidden by default */
+      flex-direction: column;
+      gap: 2rem;
+      color: #fff;
+    }
+
+    .score-container {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .score-big {
+      font-size: 5rem;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(180deg, #fff, #888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="canvas-container"></div>
+
+  <header>
+    <div>
+      <div class="title">Skill 資安審查報告</div>
+      <div class="subtitle" id="dataInfo">資安分析儀表板</div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel">
+      <div class="sidebar-chart">
+        <canvas id="riskDoughnut"></canvas>
+        <div class="canvas-center-text">
+          <div class="total-number" id="metricTotal">0</div>
+          <div class="total-label">總掃描數</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterSkills('all')">全部</button>
+        <button class="filter-tab" onclick="filterSkills('high')">高風險</button>
+        <button class="filter-tab" onclick="filterSkills('medium')">中風險</button>
+      </div>
+
+      <div class="skill-list" id="skillList"></div>
+    </aside>
+
+    <div class="content-area">
+      <!-- Executive Summary View -->
+      <div id="execSummary" class="exec-summary">
+        <div class="score-container">
+          <div>
+            <div style="text-transform:uppercase; color:var(--text-muted); letter-spacing:0.1em; margin-bottom:0.5rem;">
+              整體資安評分</div>
+            <div class="score-big" id="execScore">--</div>
+          </div>
+          <div style="flex:1;">
+            <h3 style="margin:0 0 0.5rem 0;">工作區狀態</h3>
+            <p style="color:var(--text-muted); margin:0;" id="execText">分析完成。</p>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3>高風險項目 (Top Risks)</h3>
+          <ul class="detail-list" id="execTopRisks"></ul>
+        </div>
+      </div>
+
+      <!-- Skill Detail View -->
+      <div id="skillDetailView" style="display:none;">
+        <div class="dashboard-header" id="detailHeader">
+          <h2 style="font-size:2.5rem; margin:0; color:#fff;" id="detailTitle">請選擇 Skill</h2>
+          <div style="margin-top:0.5rem; color:var(--text-muted); font-size:1.1rem;" id="detailSummary">檢視詳細發現與建議</div>
+        </div>
+
+        <!-- AI Insight Card -->
+        <div id="aiInsightCard" class="ai-card" style="display:none;">
+          <div class="ai-badge">
+            <span>🤖</span> AI 智慧分析員
+          </div>
+          <div class="ai-content" id="aiContent"></div>
+        </div>
+
+
+        <div class="detail-grid">
+          <div class="detail-card">
+            <h3>風險判斷 (Reasoning)</h3>
+            <div id="detailReasoning" style="line-height:1.6;">等待選擇...</div>
+          </div>
+          <div class="detail-card">
+            <h3>安全建議 (Recommendation)</h3>
+            <div id="detailRecommendation" style="line-height:1.6;">等待選擇...</div>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-card">
+            <h3>敏感行為 (Sensitives)</h3>
+            <ul class="detail-list" id="detailSensitive"></ul>
+          </div>
+          <div class="detail-card">
+            <h3>網路連線 (Network)</h3>
+            <ul class="detail-list" id="detailNetwork"></ul>
+          </div>
+          <div class="detail-card">
+            <h3>混淆跡象 (Obfuscation)</h3>
+            <ul class="detail-list" id="detailObfuscation"></ul>
+          </div>
+          <div class="detail-card">
+            <h3>套件安裝指令 (Package Install)</h3>
+            <ul class="detail-list" id="detailPackageInstalls"></ul>
+          </div>
+        </div>
+      </div>
+    </div> <!-- End Skill Detail View -->
+    </div>
+  </main>
+
+  <script>
+    window.__DATA__ = {
+  "generated_at": "2026-02-08 14:14:54",
+  "root": "C:\\Users\\A\\.claude",
+  "workspace_summary": {
+    "total": 46,
+    "high": 2,
+    "medium": 20,
+    "low": 24,
+    "security_score": 0
+  },
+  "items": [
+    {
+      "skill": "stripe-best-practices",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\external_plugins\\stripe\\skills\\stripe-best-practices",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、23 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://docs.stripe.com/api/charges/create.md",
+        "https://docs.stripe.com/api/checkout/sessions.md",
+        "https://docs.stripe.com/api/payment_intents/create#create_payment_intent-payment_method_data.md",
+        "https://docs.stripe.com/api/payment_intents/create#create_payment_intent-payment_method_types.md",
+        "https://docs.stripe.com/api/setup_intents.md",
+        "https://docs.stripe.com/api/sources/object.md",
+        "https://docs.stripe.com/api/tokens.md",
+        "https://docs.stripe.com/billing/subscriptions/designing-integration.md",
+        "https://docs.stripe.com/billing/subscriptions/use-cases.md",
+        "https://docs.stripe.com/connect/account-capabilities.md",
+        "https://docs.stripe.com/connect/design-an-integration.md",
+        "https://docs.stripe.com/connect/integration-recommendations.md",
+        "https://docs.stripe.com/connect/migrate-to-controller-properties.md",
+        "https://docs.stripe.com/get-started/checklist/go-live.md",
+        "https://docs.stripe.com/get-started/data-migrations/pan-import.md",
+        "https://docs.stripe.com/payments-api/tour.md",
+        "https://docs.stripe.com/payments/checkout.md",
+        "https://docs.stripe.com/payments/payment-element.md",
+        "https://docs.stripe.com/payments/payment-element/migration.md",
+        "https://docs.stripe.com/payments/payment-intents/migration/charges.md",
+        "https://docs.stripe.com/payments/payment-methods/integration-options.md",
+        "https://docs.stripe.com/payments/paymentintents/lifecycle.md",
+        "https://docs.stripe.com/saas.md"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (23 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "claude-automation-recommender",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender",
+      "summary": "功能分析：共掃描 6 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender\\references\\hooks-patterns.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-code-setup\\skills\\claude-automation-recommender\\references\\skills-reference.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "claude-md-improver",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver",
+      "summary": "功能分析：共掃描 4 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver\\references\\update-guidelines.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\claude-md-management\\skills\\claude-md-improver\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "example-skill",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\example-plugin\\skills\\example-skill",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "frontend-design",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\frontend-design\\skills\\frontend-design",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\frontend-design\\skills\\frontend-design\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "writing-hookify-rules",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\hookify\\skills\\writing-rules",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\hookify\\skills\\writing-rules\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "playground",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 2 項敏感操作、0 個外部連線、4 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\data-explorer.md",
+        "背景常駐/排程任務 (Persistence)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\data-explorer.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\code-map.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\concept-map.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\diff-review.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\playground\\skills\\playground\\templates\\document-critique.md"
+      ],
+      "package_installs": [],
+      "risk_level": "high",
+      "reasoning": "偵測到系統駐留/開機啟動設定",
+      "recommendation": "⚠️ 高度危險：不建議在含真實憑證或資產的環境安裝！僅可在隔離 VM / 拋棄式沙盒中測試。",
+      "ai_audit": null
+    },
+    {
+      "skill": "agent-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\agent-development",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\agent-development\\examples\\complete-agent-examples.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "command-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\command-development",
+      "summary": "功能分析：共掃描 11 個檔案。偵測到 0 項敏感操作、7 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://community.example.com",
+        "https://docs.example.com",
+        "https://git-scm.com/downloads",
+        "https://github.com/user/plugin/issues",
+        "https://nodejs.org/",
+        "https://releases.example.com/v$LATEST_VERSION",
+        "https://stedolan.github.io/jq/download/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (7 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "hook-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development",
+      "summary": "功能分析：共掃描 11 個檔案。偵測到 3 項敏感操作、1 個外部連線、2 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\examples\\validate-write.sh",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\advanced.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\migration.md"
+      ],
+      "network_activity": [
+        "https://docs.claude.com/en/docs/claude-code/hooks"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\advanced.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\scripts\\hook-linter.sh"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\hook-development\\references\\patterns.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "mcp-integration",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 5 項敏感操作、17 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\examples\\http-server.json",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\examples\\stdio-server.json",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\references\\authentication.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\mcp-integration\\references\\server-types.md"
+      ],
+      "network_activity": [
+        "http://localhost:8080/mcp`",
+        "http://mcp.example.com/sse",
+        "https://${TENANT_ID}.api.example.com/mcp",
+        "https://api.example.com",
+        "https://api.example.com/mcp",
+        "https://api.example.com/mcp/health",
+        "https://api.example.com/tokens",
+        "https://api.production.com/mcp`",
+        "https://docs.claude.com/en/docs/claude-code/mcp",
+        "https://mcp.asana.com/sse",
+        "https://mcp.asana.com/sse`",
+        "https://mcp.example.com/sse",
+        "https://mcp.github.com/sse",
+        "https://mcp.github.com/sse`",
+        "https://mcp.jira.com/sse",
+        "https://modelcontextprotocol.io/",
+        "https://secure.example.com"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (17 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "plugin-settings",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings",
+      "summary": "功能分析：共掃描 8 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\examples\\read-settings-hook.sh",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\real-world-examples.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\real-world-examples.md"
+      ],
+      "package_installs": [
+        "brew install 安裝 (macOS)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-settings\\references\\parsing-techniques.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "plugin-structure",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure",
+      "summary": "功能分析：共掃描 7 個檔案。偵測到 2 項敏感操作、15 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\examples\\advanced-plugin.md"
+      ],
+      "network_activity": [
+        "https://company.com/devops",
+        "https://company.com/teams/devops",
+        "https://docs.company.com/plugins/devops",
+        "https://docs.example.com",
+        "https://docs.example.com/code-review",
+        "https://docs.example.com/plugins/code-quality",
+        "https://docs.example.com/plugins/my-plugin",
+        "https://example.com",
+        "https://github.com/company/devops-plugin.git",
+        "https://github.com/example/code-quality-plugin",
+        "https://github.com/janedev/code-review-assistant",
+        "https://github.com/user/plugin-name",
+        "https://github.com/user/plugin-name.git",
+        "https://janedeveloper.com",
+        "https://spdx.org/licenses/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\plugin-structure\\examples\\standard-plugin.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (15 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "skill-development",
+      "path": "plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 2 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：plugins\\marketplaces\\claude-plugins-official\\plugins\\plugin-dev\\skills\\skill-development\\references\\skill-creator-original.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "backend-patterns",
+      "path": "skills\\backend-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\backend-patterns\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\backend-patterns\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\backend-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "clickhouse-io",
+      "path": "skills\\clickhouse-io",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\clickhouse-io\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "coding-standards",
+      "path": "skills\\coding-standards",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\coding-standards\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "continuous-learning",
+      "path": "skills\\continuous-learning",
+      "summary": "功能分析：共掃描 3 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "發現敏感設定檔：skills\\continuous-learning\\config.json (可能包含密鑰)"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "continuous-learning-v2",
+      "path": "skills\\continuous-learning-v2",
+      "summary": "功能分析：共掃描 6 個檔案。偵測到 1 項敏感操作、5 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "發現敏感設定檔：skills\\continuous-learning-v2\\config.json (可能包含密鑰)"
+      ],
+      "network_activity": [
+        "https://github.com/...",
+        "https://github.com/humanplane/homunculus",
+        "https://skill-creator.app",
+        "https://skill-creator.app/api",
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\continuous-learning-v2\\agents\\start-observer.sh"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (5 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-patterns",
+      "path": "skills\\django-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-patterns\\SKILL.md"
+      ],
+      "network_activity": [
+        "127.0.0.1"
+      ],
+      "obfuscation_signals": [
+        "地區/時區規避偵測：skills\\django-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含地區/時區判斷邏輯 (可能為逃避偵測)； 包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-security",
+      "path": "skills\\django-security",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、4 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\django-security\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-security\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://api.example.com",
+        "https://cdn.example.com",
+        "https://example.com",
+        "https://media.example.com"
+      ],
+      "obfuscation_signals": [
+        "疑似混淆/編碼 (Base64/Hex/XOR)：skills\\django-security\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "代碼包含混淆或編碼跡象 (Base64/Hex)； 包含大量外部連線 (4 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-tdd",
+      "path": "skills\\django-tdd",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-tdd\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "地區/時區規避偵測：skills\\django-tdd\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含地區/時區判斷邏輯 (可能為逃避偵測)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "django-verification",
+      "path": "skills\\django-verification",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、1 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\django-verification\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\django-verification\\SKILL.md"
+      ],
+      "network_activity": [
+        "http://localhost:8000/swagger/"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\django-verification\\SKILL.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "eval-harness",
+      "path": "skills\\eval-harness",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "frontend-patterns",
+      "path": "skills\\frontend-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\frontend-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "golang-patterns",
+      "path": "skills\\golang-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\golang-patterns\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "golang-testing",
+      "path": "skills\\golang-testing",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 2 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "動態模組/代碼載入 (Eval/Import)：skills\\golang-testing\\SKILL.md",
+        "執行任意系統指令 (Shell/Subprocess)：skills\\golang-testing\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\golang-testing\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含任意系統指令執行 (Shell/Subprocess)； 使用動態代碼執行 (Eval/Import)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "iterative-retrieval",
+      "path": "skills\\iterative-retrieval",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\iterative-retrieval\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "java-coding-standards",
+      "path": "skills\\java-coding-standards",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "jpa-patterns",
+      "path": "skills\\jpa-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "notebooklm",
+      "path": "skills\\notebooklm",
+      "summary": "功能分析：共掃描 54 個檔案。偵測到 7 項敏感操作、38 個外部連線、8 個潛在混淆指標、2 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "加密貨幣錢包相關 (Wallet/Seed/Mnemonic)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\english_wikipedia.txt",
+        "加密貨幣錢包相關 (Wallet/Seed/Mnemonic)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\surnames.txt",
+        "存取環境變數 (Env Vars)：skills\\notebooklm\\README.md",
+        "存取環境變數 (Env Vars)：skills\\notebooklm\\requirements.txt",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\README.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\passwords.txt",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\us_tv_and_film.txt"
+      ],
+      "network_activity": [
+        "0.0.0.000",
+        "1.1.0.3",
+        "http://proxy:port",
+        "https://...",
+        "https://clients2.google.com/service/update2/crx",
+        "https://creativecommons.org/.",
+        "https://creativecommons.org/compatiblelicenses",
+        "https://easylist.to/",
+        "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python#anti-detection",
+        "https://github.com/PleasePrompto/notebooklm-mcp",
+        "https://github.com/PleasePrompto/notebooklm-skill",
+        "https://github.com/anthropics/claude-code",
+        "https://github.com/easylist",
+        "https://github.com/microsoft/playwright/issues/14949",
+        "https://github.com/microsoft/playwright/issues/36139",
+        "https://img.shields.io/badge/Based%20on-NotebookLM%20MCP-green.svg",
+        "https://img.shields.io/badge/Claude%20Code-Skill-purple.svg",
+        "https://img.shields.io/badge/Python-3.8+-blue.svg",
+        "https://img.shields.io/github/stars/PleasePrompto/notebooklm-skill?style=social",
+        "https://issuer.captchafox.com",
+        "https://keepachangelog.com/en/1.0.0/",
+        "https://my.contentpass.net",
+        "https://notebooklm.google.com",
+        "https://notebooklm.google.com/...",
+        "https://notebooklm.google.com/notebook/...",
+        "https://notebooklm.google.com/notebook/...`",
+        "https://notebooklm.google.com/notebook/4db0d4e9-6f32-4794-a7ca-566ce8bfd636",
+        "https://notebooklm.google/",
+        "https://notebooklm\\.google\\.com/",
+        "https://privatetokens.dev",
+        "https://pst-issuer.hcaptcha.com",
+        "https://pst.authfy.tech",
+        "https://semver.org/spec/v2.0.0.html",
+        "https://stackoverflow.com/questions/79641481/",
+        "https://trusttoken.dev",
+        "https://www.amazon.com",
+        "https://www.anthropic.com/news/skills",
+        "https://www.python.org/"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\surnames.txt",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\us_tv_and_film.txt",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\references\\api_reference.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\references\\usage_patterns.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\ask_question.py",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\browser_session.py",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\notebooklm\\scripts\\browser_utils.py",
+        "地區/時區規避偵測：skills\\notebooklm\\data\\browser_state\\browser_profile\\ZxcvbnData\\3\\english_wikipedia.txt"
+      ],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\notebooklm\\README.md",
+        "pip install 安裝 (Python)：skills\\notebooklm\\SKILL.md"
+      ],
+      "risk_level": "high",
+      "reasoning": "偵測到加密貨幣錢包或私鑰存取路徑； 包含地區/時區判斷邏輯 (可能為逃避偵測)； 包含大量外部連線 (36 個)",
+      "recommendation": "⚠️ 高度危險：不建議在含真實憑證或資產的環境安裝！僅可在隔離 VM / 拋棄式沙盒中測試。",
+      "ai_audit": null
+    },
+    {
+      "skill": "postgres-patterns",
+      "path": "skills\\postgres-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://github.com/supabase/agent-skills"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "project-guidelines-example",
+      "path": "skills\\project-guidelines-example",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、4 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "http://test",
+        "https://api.example.com",
+        "https://xxx.supabase.co",
+        "https://zenith.chat"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\project-guidelines-example\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (4 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "prompt-lookup",
+      "path": "skills\\prompt-lookup",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "python-patterns",
+      "path": "skills\\python-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\python-patterns\\SKILL.md"
+      ],
+      "package_installs": [
+        "pip install 安裝 (Python)：skills\\python-patterns\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "python-testing",
+      "path": "skills\\python-testing",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、1 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\python-testing\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://api.example.com"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\python-testing\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "security-review",
+      "path": "skills\\security-review",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 4 項敏感操作、12 個外部連線、1 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "存取環境變數 (Env Vars)：skills\\security-review\\SKILL.md",
+        "存取環境變數 (Env Vars)：skills\\security-review\\cloud-infrastructure-security.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\security-review\\SKILL.md",
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\security-review\\cloud-infrastructure-security.md"
+      ],
+      "network_activity": [
+        "0.0.0.0",
+        "10.0.0.0",
+        "https://api.example.com;",
+        "https://aws.amazon.com/security/best-practices/",
+        "https://developers.cloudflare.com/security/",
+        "https://nextjs.org/docs/security",
+        "https://owasp.org/www-project-cloud-security/",
+        "https://owasp.org/www-project-top-ten/",
+        "https://portswigger.net/web-security",
+        "https://supabase.com/docs/guides/auth",
+        "https://www.cisecurity.org/benchmark/amazon_web_services",
+        "https://www.terraform.io/docs/cloud/guides/recommended-practices/"
+      ],
+      "obfuscation_signals": [
+        "疑似混淆/編碼 (Base64/Hex/XOR)：skills\\security-review\\SKILL.md"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\security-review\\SKILL.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "代碼包含混淆或編碼跡象 (Base64/Hex)； 包含大量外部連線 (10 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "skill-lookup",
+      "path": "skills\\skill-lookup",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-patterns",
+      "path": "skills\\springboot-patterns",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\springboot-patterns\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-security",
+      "path": "skills\\springboot-security",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\springboot-security\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-tdd",
+      "path": "skills\\springboot-tdd",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "springboot-verification",
+      "path": "skills\\springboot-verification",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、0 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    },
+    {
+      "skill": "strategic-compact",
+      "path": "skills\\strategic-compact",
+      "summary": "功能分析：共掃描 2 個檔案。偵測到 1 項敏感操作、1 個外部連線、0 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\strategic-compact\\SKILL.md"
+      ],
+      "network_activity": [
+        "https://x.com/affaanmustafa/status/2014040193557471352"
+      ],
+      "obfuscation_signals": [],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "tdd-workflow",
+      "path": "skills\\tdd-workflow",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 0 項敏感操作、2 個外部連線、1 個潛在混淆指標、0 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "http://localhost/api/markets",
+        "http://localhost/api/markets?limit=invalid"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\tdd-workflow\\SKILL.md"
+      ],
+      "package_installs": [],
+      "risk_level": "medium",
+      "reasoning": "包含外部網路連線",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "vercel-react-best-practices",
+      "path": "skills\\vercel-react-best-practices",
+      "summary": "功能分析：共掃描 58 個檔案。偵測到 0 項敏感操作、19 個外部連線、3 個潛在混淆指標、3 個套件安裝指令。",
+      "sensitive_behaviors": [],
+      "network_activity": [
+        "https://csstriggers.com/",
+        "https://example.com",
+        "https://gist.github.com/paulirish/5d52fb081b3570c81e3a",
+        "https://github.com/isaacs/node-lru-cache",
+        "https://github.com/shuding/better-all",
+        "https://jsfiddle.net/qw1jabsx/4/",
+        "https://nextjs.org",
+        "https://nextjs.org/docs/app/api-reference/functions/after",
+        "https://nextjs.org/docs/app/guides/authentication",
+        "https://react.dev",
+        "https://react.dev/learn/react-compiler",
+        "https://react.dev/reference/react/cache",
+        "https://react.dev/reference/react/useTransition",
+        "https://swr.vercel.app",
+        "https://vercel.com",
+        "https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast",
+        "https://vercel.com/blog/how-we-optimized-package-imports-in-next-js",
+        "https://vercel.com/docs/fluid-compute",
+        "https://x.com/shuding"
+      ],
+      "obfuscation_signals": [
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\AGENTS.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\rules\\advanced-use-latest.md",
+        "反除錯/反沙盒 (Sleep/UserInteraction)：skills\\vercel-react-best-practices\\rules\\client-passive-event-listeners.md"
+      ],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\vercel-react-best-practices\\AGENTS.md",
+        "npm install 安裝 (Node.js)：skills\\vercel-react-best-practices\\rules\\rendering-svg-precision.md",
+        "pnpm add 安裝 (Node.js)：skills\\vercel-react-best-practices\\README.md"
+      ],
+      "risk_level": "medium",
+      "reasoning": "包含大量外部連線 (19 個)",
+      "recommendation": "⚠️ 具可疑行為：建議僅在「隔離環境」或使用「小額測試錢包」進行測試，並檢查網路流量。",
+      "ai_audit": null
+    },
+    {
+      "skill": "verification-loop",
+      "path": "skills\\verification-loop",
+      "summary": "功能分析：共掃描 1 個檔案。偵測到 1 項敏感操作、0 個外部連線、0 個潛在混淆指標、1 個套件安裝指令。",
+      "sensitive_behaviors": [
+        "硬編碼憑證關鍵字 (API Key/Token/Secret)：skills\\verification-loop\\SKILL.md"
+      ],
+      "network_activity": [],
+      "obfuscation_signals": [],
+      "package_installs": [
+        "npm install 安裝 (Node.js)：skills\\verification-loop\\SKILL.md"
+      ],
+      "risk_level": "low",
+      "reasoning": "未偵測到明顯已知惡意特徵",
+      "recommendation": "✅ 相對安全：目前未發現明顯惡意特徵，但仍建議遵循最小權限原則使用。",
+      "ai_audit": null
+    }
+  ]
+};
+  </script>
+
+  <!-- Shader Code -->
+  <script id="vertexShader" type="x-shader/x-vertex">
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  </script>
+
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    // Aurora Prism Beam Shader (Refined based on ReactBits "Beams" inspiration)
+    
+    uniform float uTime;
+    uniform vec2 uResolution;
+    
+    varying vec2 vUv;
+
+    // --- Noise Functions ---
+    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+    float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                            0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                            -0.577350269189626, // -1.0 + 2.0 * C.x
+                            0.024390243902439); // 1.0 / 41.0
+        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 x0 = v -   i + dot(i, C.xx);
+        vec2 i1;
+        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i); // Avoid truncation effects in permutation
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m ;
+        m = m*m ;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+    }
+
+    // --- Color Palette (Spectral - Soft/Desaturated) ---
+    vec3 palette(float t) {
+        // Soft prism palette: Higher base (a), Lower amplitude (b) to reduce saturation
+        vec3 a = vec3(0.6, 0.6, 0.65); // Brighter/Whiter base
+        vec3 b = vec3(0.3, 0.3, 0.3);  // Lower saturation (was 0.5)
+        vec3 c = vec3(1.0, 1.0, 1.0);  // Frequency
+        vec3 d = vec3(0.00, 0.33, 0.67); // Phase
+        return a + b * cos(6.28318 * (c * t + d));
+    }
+
+    void main() {
+        vec2 uv = gl_FragCoord.xy / uResolution.xy;
+        float ratio = uResolution.x / uResolution.y;
+        uv.x *= ratio;
+        
+        // --- Breathing Effect ---
+        // Modulate time and intensity slowly
+        float breath = 0.5 * sin(uTime * 0.4) + 0.5; // 0.0 to 1.0
+        
+        // Very slow time for "breathing" movement
+        float time = uTime * 0.05; 
+        
+        vec2 beamUv = uv;
+        
+        // Rotate
+        float angle = -0.6; // Slightly steeper
+        float s = sin(angle);
+        float c = cos(angle);
+        mat2 rot = mat2(c, -s, s, c);
+        beamUv = rot * beamUv;
+        
+        // Warping
+        vec2 q = vec2(0.);
+        q.x = snoise(beamUv * 0.7 + vec2(0.0, time));
+        q.y = snoise(beamUv * 0.4 + vec2(0.0, time * 0.9));
+        
+        vec2 r = vec2(0.);
+        r.x = snoise(beamUv + 1.0 * q + vec2(1.7, 9.2) + 0.15 * time);
+        r.y = snoise(beamUv + 1.0 * q + vec2(8.3, 2.8) + 0.126 * time);
+        
+        float f = snoise(beamUv + r);
+        
+        // Beam Mask (Breathing Width)
+        float widthBase = 0.3;
+        // Breathing affects width slightly
+        float currentWidth = widthBase + 0.05 * sin(uTime * 0.8);
+        
+        float distFromCenter = abs(beamUv.y + 0.3);
+        float mask = smoothstep(1.2, 0.0, distFromCenter); 
+        
+        // Color Mapping (Reduced Variation)
+        // Multiply f by smaller number to reduce rainbow cycles
+        vec3 col = palette(f * 0.3 + beamUv.x * 0.15 + time * 0.1);
+        
+        // --- Saturation & Breathing Intensity ---
+        col *= mask;
+        
+        // Global Breathing Intensity
+        float intensity = 0.9 + 0.2 * breath; // 0.9 to 1.1 brightness wub
+        col *= intensity;
+
+        // Grain (Keep High)
+        float noiseVal = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+        col += (noiseVal - 0.5) * 0.12;
+        
+        // Vignette
+        float vig = 1.0 - length(uv / ratio - 0.5) * 0.8;
+        col *= vig;
+        
+        // Deep background
+        col = mix(vec3(0.01, 0.01, 0.02), col, mask * 1.0);
+
+        gl_FragColor = vec4(col, 1.0);
+    }
+  </script>
+
+  <script>
+    /* --- Three.js Background --- */
+    let scene, camera, renderer, uniforms;
+
+    function initThree() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      renderer = new THREE.WebGLRenderer({ alpha: true }); // Alpha true allowed
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
+
+      const geometry = new THREE.PlaneGeometry(2, 2);
+
+      uniforms = {
+        uTime: { value: 0 },
+        uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+      };
+
+      const material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: document.getElementById('vertexShader').textContent,
+        fragmentShader: document.getElementById('fragmentShader').textContent
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      window.addEventListener('resize', onWindowResize, false);
+      animate();
+    }
+
+    function onWindowResize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      const canvas = renderer.domElement;
+      uniforms.uResolution.value.x = canvas.width;
+      uniforms.uResolution.value.y = canvas.height;
+    }
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      uniforms.uTime.value = time * 0.001;
+      renderer.render(scene, camera);
+    }
+
+    initThree();
+
+    /* --- Dashboard Data & Logic --- */
+    const data = window.__DATA__ || { items: [] };
+    let allItems = Array.isArray(data.items) ? data.items : [];
+    let currentFilter = 'all';
+
+
+    // Updated colors for the Rainbow Beam theme
+    const COLORS = {
+      high: '#FF3366', // Hot Pink
+      medium: '#FFCC00', // Yellow
+      low: '#00FFCC'  // Cyan
+    };
+
+    function initDashboard() {
+      if (data.root) {
+        document.getElementById('dataInfo').textContent = `${data.root} • ${data.generated_at}`;
+      }
+      document.getElementById('metricTotal').textContent = allItems.length;
+
+      renderRiskChart();
+      renderSidebar();
+
+      // Default to Executive Summary if no items or on load
+      showExecutiveSummary();
+    }
+
+    // Markdown Parser (Simple)
+    function parseMarkdown(text) {
+      if (!text) return '';
+      let html = text
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+        .replace(/\*(.*)\*/gim, '<i>$1</i>')
+        .replace(/`(.*?)`/gim, '<code>$1</code>')
+        .replace(/- (.*$)/gim, '<li>$1</li>');
+
+      // Wrap lists (very naive) - improved slightly
+      // html = html.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>'); // often breaks with multiple lists. 
+      // Let's just keep lines for now or rely on <br>
+      html = html.replace(/\n/gim, '<br>');
+      return html;
+    }
+
+    /* === Executive Summary === */
+    function showExecutiveSummary() {
+      document.getElementById('skillDetailView').style.display = 'none';
+      document.getElementById('execSummary').style.display = 'flex';
+
+      // Update Score
+      const stats = data.workspace_summary || { security_score: 0 };
+      document.getElementById('execScore').textContent = stats.security_score || 'N/A';
+
+      let statusMsg = "System looks secure.";
+      if (stats.security_score < 60) statusMsg = "Critical attention needed.";
+      else if (stats.security_score < 85) statusMsg = "Several warnings detected.";
+      document.getElementById('execText').textContent = statusMsg;
+
+      // Top Risks
+      const topRisks = allItems.filter(i => i.risk_level === 'high').concat(allItems.filter(i => i.risk_level === 'medium')).slice(0, 5);
+      fillList('execTopRisks', topRisks.map(i => `${i.skill} (${i.risk_level.toUpperCase()}): ${i.summary}`));
+
+      // Clear active class
+      document.querySelectorAll('.skill-item').forEach(e => e.classList.remove('active'));
+    }
+
+    /* === Filters === */
+    function filterSkills(type) {
+      currentFilter = type;
+
+      // Update tabs
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.classList.remove('active');
+        if (b.textContent.toLowerCase() === type || (type === 'all' && b.textContent === 'ALL')) b.classList.add('active');
+        if (type === 'medium' && b.textContent === 'MED') b.classList.add('active');
+      });
+
+      renderSidebar();
+    }
+
+    function renderRiskChart() {
+      const counts = {
+        high: allItems.filter(i => i.risk_level === 'high').length,
+        medium: allItems.filter(i => i.risk_level === 'medium').length,
+        low: allItems.filter(i => i.risk_level === 'low').length
+      };
+
+
+      const ctx = document.getElementById('riskDoughnut').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['High', 'Medium', 'Low'],
+          datasets: [{
+            data: [counts.high, counts.medium, counts.low],
+            backgroundColor: [COLORS.high, COLORS.medium, COLORS.low],
+            borderWidth: 0,
+            hoverOffset: 15
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '80%',
+          plugins: { legend: { display: false }, tooltip: { enabled: true } }
+        }
+      });
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('skillList');
+      list.innerHTML = ''; // Clear existing
+
+      const filtered = currentFilter === 'all'
+        ? allItems
+        : allItems.filter(i => i.risk_level === currentFilter);
+
+      filtered.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'skill-item';
+        const dotClass = `risk-${item.risk_level}`;
+
+        el.innerHTML = `
+                <div class="skill-name">
+                    ${item.skill}
+                    <div class="risk-dot ${dotClass}"></div>
+                </div>
+                <div class="skill-path">${item.path}</div>
+            `;
+        el.onclick = () => selectSkill(item, el);
+        list.appendChild(el);
+      });
+    }
+
+    function selectSkill(item, el) {
+      document.querySelectorAll('.skill-item').forEach(e => e.classList.remove('active'));
+      if (el) el.classList.add('active');
+
+      // Switch View
+      document.getElementById('execSummary').style.display = 'none';
+      document.getElementById('skillDetailView').style.display = 'block';
+
+      document.getElementById('detailTitle').textContent = item.skill;
+      document.getElementById('detailSummary').textContent = item.summary;
+
+      // AI Audit Content
+      const aiCard = document.getElementById('aiInsightCard');
+      const aiContent = document.getElementById('aiContent');
+      if (item.ai_audit && item.ai_audit.ai_insights) {
+        aiCard.style.display = 'block';
+        aiContent.innerHTML = parseMarkdown(item.ai_audit.ai_insights);
+
+        // Override text if AI exists
+        if (item.ai_audit.summary) document.getElementById('detailSummary').textContent = item.ai_audit.summary;
+      } else {
+        aiCard.style.display = 'none';
+      }
+
+      document.getElementById('detailReasoning').textContent = item.reasoning;
+      document.getElementById('detailRecommendation').textContent = item.recommendation;
+
+      fillList('detailSensitive', item.sensitive_behaviors);
+      fillList('detailNetwork', item.network_activity, true);
+      fillList('detailObfuscation', item.obfuscation_signals);
+      fillList('detailPackageInstalls', item.package_installs);
+    }
+
+
+    function fillList(id, arr, isLink = false) {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      if (!arr || arr.length === 0) {
+        el.innerHTML = '<li style="opacity:0.5; font-style:italic;">None Detected</li>';
+        return;
+      }
+      arr.forEach(txt => {
+        const li = document.createElement('li');
+        if (isLink && (txt.startsWith('http'))) {
+          li.innerHTML = `<a href="${txt}" target="_blank" style="color:#00FFCC; text-decoration:none;">${txt}</a>`;
+        } else {
+          li.textContent = txt;
+        }
+        el.appendChild(li);
+      });
+    }
+
+    initDashboard();
+  </script>
+</body>
+
+</html>

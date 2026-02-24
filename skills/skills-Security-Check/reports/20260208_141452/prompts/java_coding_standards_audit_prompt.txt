@@ -1,0 +1,185 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: java-coding-standards
+- **路徑**: skills\java-coding-standards
+
+## 2. 檔案結構 (File Tree)
+```text
+    SKILL.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- 未偵測到靜態異常
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: java-coding-standards
+description: Java coding standards for Spring Boot services: naming, immutability, Optional usage, streams, exceptions, generics, and project layout.
+---
+
+# Java Coding Standards
+
+Standards for readable, maintainable Java (17+) code in Spring Boot services.
+
+## Core Principles
+
+- Prefer clarity over cleverness
+- Immutable by default; minimize shared mutable state
+- Fail fast with meaningful exceptions
+- Consistent naming and package structure
+
+## Naming
+
+```java
+// ✅ Classes/Records: PascalCase
+public class MarketService {}
+public record Money(BigDecimal amount, Currency currency) {}
+
+// ✅ Methods/fields: camelCase
+private final MarketRepository marketRepository;
+public Market findBySlug(String slug) {}
+
+// ✅ Constants: UPPER_SNAKE_CASE
+private static final int MAX_PAGE_SIZE = 100;
+```
+
+## Immutability
+
+```java
+// ✅ Favor records and final fields
+public record MarketDto(Long id, String name, MarketStatus status) {}
+
+public class Market {
+  private final Long id;
+  private final String name;
+  // getters only, no setters
+}
+```
+
+## Optional Usage
+
+```java
+// ✅ Return Optional from find* methods
+Optional<Market> market = marketRepository.findBySlug(slug);
+
+// ✅ Map/flatMap instead of get()
+return market
+    .map(MarketResponse::from)
+    .orElseThrow(() -> new EntityNotFoundException("Market not found"));
+```
+
+## Streams Best Practices
+
+```java
+// ✅ Use streams for transformations, keep pipelines short
+List<String> names = markets.stream()
+    .map(Market::name)
+    .filter(Objects::nonNull)
+    .toList();
+
+// ❌ Avoid complex nested streams; prefer loops for clarity
+```
+
+## Exceptions
+
+- Use unchecked exceptions for domain errors; wrap technical exceptions with context
+- Create domain-specific exceptions (e.g., `MarketNotFoundException`)
+- Avoid broad `catch (Exception ex)` unless rethrowing/logging centrally
+
+```java
+throw new MarketNotFoundException(slug);
+```
+
+## Generics and Type Safety
+
+- Avoid raw types; declare generic parameters
+- Prefer bounded generics for reusable utilities
+
+```java
+public <T extends Identifiable> Map<Long, T> indexById(Collection<T> items) { ... }
+```
+
+## Project Structure (Maven/Gradle)
+
+```
+src/main/java/com/example/app/
+  config/
+  controller/
+  service/
+  repository/
+  domain/
+  dto/
+  util/
+src/main/resources/
+  application.yml
+src/test/java/... (mirrors main)
+```
+
+## Formatting and Style
+
+- Use 2 or 4 spaces consistently (project standard)
+- One public top-level type per file
+- Keep methods short and focused; extract helpers
+- Order members: constants, fields, constructors, public methods, protected, private
+
+## Code Smells to Avoid
+
+- Long parameter lists → use DTO/builders
+- Deep nesting → early returns
+- Magic numbers → named constants
+- Static mutable state → prefer dependency injection
+- Silent catch blocks → log and act or rethrow
+
+## Logging
+
+```java
+private static final Logger log = LoggerFactory.getLogger(MarketService.class);
+log.info("fetch_market slug={}", slug);
+log.error("failed_fetch_market slug={}", slug, ex);
+```
+
+## Null Handling
+
+- Accept `@Nullable` only when unavoidable; otherwise use `@NonNull`
+- Use Bean Validation (`@NotNull`, `@NotBlank`) on inputs
+
+## Testing Expectations
+
+- JUnit 5 + AssertJ for fluent assertions
+- Mockito for mocking; avoid partial mocks where possible
+- Favor deterministic tests; no hidden sleeps
+
+**Remember**: Keep code intentional, typed, and observable. Optimize for maintainability over micro-optimizations unless proven necessary.
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

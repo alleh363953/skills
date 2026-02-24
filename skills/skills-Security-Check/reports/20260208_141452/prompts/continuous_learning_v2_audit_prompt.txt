@@ -1,0 +1,672 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: continuous-learning-v2
+- **路徑**: skills\continuous-learning-v2
+
+## 2. 檔案結構 (File Tree)
+```text
+    config.json
+    SKILL.md
+    agents/
+        observer.md
+        start-observer.sh
+    hooks/
+        observe.sh
+    scripts/
+        instinct-cli.py
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- https://github.com/...
+- https://github.com/humanplane/homunculus
+- https://skill-creator.app
+- https://skill-creator.app/api
+- https://x.com/affaanmustafa/status/2014040193557471352
+- 反除錯/反沙盒 (Sleep/UserInteraction)：skills\continuous-learning-v2\agents\start-observer.sh
+- 發現敏感設定檔：skills\continuous-learning-v2\config.json (可能包含密鑰)
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: continuous-learning-v2
+description: Instinct-based learning system that observes sessions via hooks, creates atomic instincts with confidence scoring, and evolves them into skills/commands/agents.
+version: 2.0.0
+---
+
+# Continuous Learning v2 - Instinct-Based Architecture
+
+An advanced learning system that turns your Claude Code sessions into reusable knowledge through atomic "instincts" - small learned behaviors with confidence scoring.
+
+## What's New in v2
+
+| Feature | v1 | v2 |
+|---------|----|----|
+| Observation | Stop hook (session end) | PreToolUse/PostToolUse (100% reliable) |
+| Analysis | Main context | Background agent (Haiku) |
+| Granularity | Full skills | Atomic "instincts" |
+| Confidence | None | 0.3-0.9 weighted |
+| Evolution | Direct to skill | Instincts → cluster → skill/command/agent |
+| Sharing | None | Export/import instincts |
+
+## The Instinct Model
+
+An instinct is a small learned behavior:
+
+```yaml
+---
+id: prefer-functional-style
+trigger: "when writing new functions"
+confidence: 0.7
+domain: "code-style"
+source: "session-observation"
+---
+
+# Prefer Functional Style
+
+## Action
+Use functional patterns over classes when appropriate.
+
+## Evidence
+- Observed 5 instances of functional pattern preference
+- User corrected class-based approach to functional on 2025-01-15
+```
+
+**Properties:**
+- **Atomic** — one trigger, one action
+- **Confidence-weighted** — 0.3 = tentative, 0.9 = near certain
+- **Domain-tagged** — code-style, testing, git, debugging, workflow, etc.
+- **Evidence-backed** — tracks what observations created it
+
+## How It Works
+
+```
+Session Activity
+      │
+      │ Hooks capture prompts + tool use (100% reliable)
+      ▼
+┌─────────────────────────────────────────┐
+│         observations.jsonl              │
+│   (prompts, tool calls, outcomes)       │
+└─────────────────────────────────────────┘
+      │
+      │ Observer agent reads (background, Haiku)
+      ▼
+┌─────────────────────────────────────────┐
+│          PATTERN DETECTION              │
+│   • User corrections → instinct         │
+│   • Error resolutions → instinct        │
+│   • Repeated workflows → instinct       │
+└─────────────────────────────────────────┘
+      │
+      │ Creates/updates
+      ▼
+┌─────────────────────────────────────────┐
+│         instincts/personal/             │
+│   • prefer-functional.md (0.7)          │
+│   • always-test-first.md (0.9)          │
+│   • use-zod-validation.md (0.6)         │
+└─────────────────────────────────────────┘
+      │
+      │ /evolve clusters
+      ▼
+┌─────────────────────────────────────────┐
+│              evolved/                   │
+│   • commands/new-feature.md             │
+│   • skills/testing-workflow.md          │
+│   • agents/refactor-specialist.md       │
+└─────────────────────────────────────────┘
+```
+
+## Quick Start
+
+### 1. Enable Observation Hooks
+
+Add to your `~/.claude/settings.json`.
+
+**If installed as a plugin** (recommended):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "${CLAUDE_PLUGIN_ROOT}/skills/continuous-learning-v2/hooks/observe.sh pre"
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "${CLAUDE_PLUGIN_ROOT}/skills/continuous-learning-v2/hooks/observe.sh post"
+      }]
+    }]
+  }
+}
+```
+
+**If installed manually** to `~/.claude/skills`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "~/.claude/skills/continuous-learning-v2/hooks/observe.sh pre"
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "~/.claude/skills/continuous-learning-v2/hooks/observe.sh post"
+      }]
+    }]
+  }
+}
+```
+
+### 2. Initialize Directory Structure
+
+The Python CLI will create these automatically, but you can also create them manually:
+
+```bash
+mkdir -p ~/.claude/homunculus/{instincts/{personal,inherited},evolved/{agents,skills,commands}}
+touch ~/.claude/homunculus/observations.jsonl
+```
+
+### 3. Use the Instinct Commands
+
+```bash
+/instinct-status     # Show learned instincts with confidence scores
+/evolve              # Cluster related instincts into skills/commands
+/instinct-export     # Export instincts for sharing
+/instinct-import     # Import instincts from others
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/instinct-status` | Show all learned instincts with confidence |
+| `/evolve` | Cluster related instincts into skills/commands |
+| `/instinct-export` | Export instincts for sharing |
+| `/instinct-import <file>` | Import instincts from others |
+
+## Configuration
+
+Edit `config.json`:
+
+```json
+{
+  "version": "2.0",
+  "observation": {
+    "enabled": true,
+    "store_path": "~/.claude/homunculus/observations.jsonl",
+    "max_file_size_mb": 10,
+    "archive_after_days": 7
+  },
+  "instincts": {
+    "personal_path": "~/.claude/homunculus/instincts/personal/",
+    "inherited_path": "~/.claude/homunculus/instincts/inherited/",
+    "min_confidence": 0.3,
+    "auto_approve_threshold": 0.7,
+    "confidence_decay_rate": 0.05
+  },
+  "observer": {
+    "enabled": true,
+    "model": "haiku",
+    "run_interval_minutes": 5,
+    "patterns_to_detect": [
+      "user_corrections",
+      "error_resolutions",
+      "repeated_workflows",
+      "tool_preferences"
+    ]
+  },
+  "evolution": {
+    "cluster_threshold": 3,
+    "evolved_path": "~/.claude/homunculus/evolved/"
+  }
+}
+```
+
+## File Structure
+
+```
+~/.claude/homunculus/
+├── identity.json           # Your profile, technical level
+├── observations.jsonl      # Current session observations
+├── observations.archive/   # Processed observations
+├── instincts/
+│   ├── personal/           # Auto-learned instincts
+│   └── inherited/          # Imported from others
+└── evolved/
+    ├── agents/             # Generated specialist agents
+    ├── skills/             # Generated skills
+    └── commands/           # Generated commands
+```
+
+## Integration with Skill Creator
+
+When you use the [Skill Creator GitHub App](https://skill-creator.app), it now generates **both**:
+- Traditional SKILL.md files (for backward compatibility)
+- Instinct collections (for v2 learning system)
+
+Instincts from repo analysis have `source: "repo-analysis"` and include the source repository URL.
+
+## Confidence Scoring
+
+Confidence evolves over time:
+
+| Score | Meaning | Behavior |
+|-------|---------|----------|
+| 0.3 | Tentative | Suggested but not enforced |
+| 0.5 | Moderate | Applied when relevant |
+| 0.7 | Strong | Auto-approved for application |
+| 0.9 | Near-certain | Core behavior |
+
+**Confidence increases** when:
+- Pattern is repeatedly observed
+- User doesn't correct the suggested behavior
+- Similar instincts from other sources agree
+
+**Confidence decreases** when:
+- User explicitly corrects the behavior
+- Pattern isn't observed for extended periods
+- Contradicting evidence appears
+
+## Why Hooks vs Skills for Observation?
+
+> "v1 relied on skills to observe. Skills are probabilistic—they fire ~50-80% of the time based on Claude's judgment."
+
+Hooks fire **100% of the time**, deterministically. This means:
+- Every tool call is observed
+- No patterns are missed
+- Learning is comprehensive
+
+## Backward Compatibility
+
+v2 is fully compatible with v1:
+- Existing `~/.claude/skills/learned/` skills still work
+- Stop hook still runs (but now also feeds into v2)
+- Gradual migration path: run both in parallel
+
+## Privacy
+
+- Observations stay **local** on your machine
+- Only **instincts** (patterns) can be exported
+- No actual code or conversation content is shared
+- You control what gets exported
+
+## Related
+
+- [Skill Creator](https://skill-creator.app) - Generate instincts from repo history
+- [Homunculus](https://github.com/humanplane/homunculus) - Inspiration for v2 architecture
+- [The Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352) - Continuous learning section
+
+---
+
+*Instinct-based learning: teaching Claude your patterns, one observation at a time.*
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): skills\continuous-learning-v2\config.json
+```python
+{
+  "version": "2.0",
+  "observation": {
+    "enabled": true,
+    "store_path": "~/.claude/homunculus/observations.jsonl",
+    "max_file_size_mb": 10,
+    "archive_after_days": 7,
+    "capture_tools": ["Edit", "Write", "Bash", "Read", "Grep", "Glob"],
+    "ignore_tools": ["TodoWrite"]
+  },
+  "instincts": {
+    "personal_path": "~/.claude/homunculus/instincts/personal/",
+    "inherited_path": "~/.claude/homunculus/instincts/inherited/",
+    "min_confidence": 0.3,
+    "auto_approve_threshold": 0.7,
+    "confidence_decay_rate": 0.02,
+    "max_instincts": 100
+  },
+  "observer": {
+    "enabled": false,
+    "model": "haiku",
+    "run_interval_minutes": 5,
+    "min_observations_to_analyze": 20,
+    "patterns_to_detect": [
+      "user_corrections",
+      "error_resolutions",
+      "repeated_workflows",
+      "tool_preferences",
+      "file_patterns"
+    ]
+  },
+  "evolution": {
+    "cluster_threshold": 3,
+    "evolved_path": "~/.claude/homunculus/evolved/",
+    "auto_evolve": false
+  },
+  "integration": {
+    "skill_creator_api": "https://skill-creator.app/api",
+    "backward_compatible_v1": true
+  }
+}
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): skills\continuous-learning-v2\agents\start-observer.sh
+```python
+#!/bin/bash
+# Continuous Learning v2 - Observer Agent Launcher
+#
+# Starts the background observer agent that analyzes observations
+# and creates instincts. Uses Haiku model for cost efficiency.
+#
+# Usage:
+#   start-observer.sh        # Start observer in background
+#   start-observer.sh stop   # Stop running observer
+#   start-observer.sh status # Check if observer is running
+
+set -e
+
+CONFIG_DIR="${HOME}/.claude/homunculus"
+PID_FILE="${CONFIG_DIR}/.observer.pid"
+LOG_FILE="${CONFIG_DIR}/observer.log"
+OBSERVATIONS_FILE="${CONFIG_DIR}/observations.jsonl"
+
+mkdir -p "$CONFIG_DIR"
+
+case "${1:-start}" in
+  stop)
+    if [ -f "$PID_FILE" ]; then
+      pid=$(cat "$PID_FILE")
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "Stopping observer (PID: $pid)..."
+        kill "$pid"
+        rm -f "$PID_FILE"
+        echo "Observer stopped."
+      else
+        echo "Observer not running (stale PID file)."
+        rm -f "$PID_FILE"
+      fi
+    else
+      echo "Observer not running."
+    fi
+    exit 0
+    ;;
+
+  status)
+    if [ -f "$PID_FILE" ]; then
+      pid=$(cat "$PID_FILE")
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "Observer is running (PID: $pid)"
+        echo "Log: $LOG_FILE"
+        echo "Observations: $(wc -l < "$OBSERVATIONS_FILE" 2>/dev/null || echo 0) lines"
+        exit 0
+      else
+        echo "Observer not running (stale PID file)"
+        rm -f "$PID_FILE"
+        exit 1
+      fi
+    else
+      echo "Observer not running"
+      exit 1
+    fi
+    ;;
+
+  start)
+    # Check if already running
+    if [ -f "$PID_FILE" ]; then
+      pid=$(cat "$PID_FILE")
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "Observer already running (PID: $pid)"
+        exit 0
+      fi
+      rm -f "$PID_FILE"
+    fi
+
+    echo "Starting observer agent..."
+
+    # The observer loop
+    (
+      trap 'rm -f "$PID_FILE"; exit 0' TERM INT
+
+      analyze_observations() {
+        # Only analyze if we have enough observations
+        obs_count=$(wc -l < "$OBSERVATIONS_FILE" 2>/dev/null || echo 0)
+        if [ "$obs_count" -lt 10 ]; then
+          return
+        fi
+
+        echo "[$(date)] Analyzing $obs_count observations..." >> "$LOG_FILE"
+
+        # Use Claude Code with Haiku to analyze observations
+        # This spawns a quick analysis session
+        if command -v claude &> /dev/null; then
+          claude --model haiku --max-turns 3 --print \
+            "Read $OBSERVATIONS_FILE and identify patterns. If you find 3+ occurrences of the same pattern, create an instinct file in $CONFIG_DIR/instincts/personal/ following the format in the observer agent spec. Be conservative - only create instincts for clear patterns." \
+            >> "$LOG_FILE" 2>&1 || true
+        fi
+
+        # Archive processed observations
+        if [ -f "$OBSERVATIONS_FILE" ]; then
+          archive_dir="${CONFIG_DIR}/observations.archive"
+          mkdir -p "$archive_dir"
+          mv "$OBSERVATIONS_FILE" "$archive_dir/processed-$(date +%Y%m%d-%H%M%S).jsonl"
+          touch "$OBSERVATIONS_FILE"
+        fi
+      }
+
+      # Handle SIGUSR1 for on-demand analysis
+      trap 'analyze_observations' USR1
+
+      echo "$$" > "$PID_FILE"
+      echo "[$(date)] Observer started (PID: $$)" >> "$LOG_FILE"
+
+      while true; do
+        # Check every 5 minutes
+        sleep 300
+
+        analyze_observations
+      done
+    ) &
+
+    disown
+
+    # Wait a moment for PID file
+    sleep 1
+
+    if [ -f "$PID_FILE" ]; then
+      echo "Observer started (PID: $(cat "$PID_FILE"))"
+      echo "Log: $LOG_FILE"
+    else
+      echo "Failed to start observer"
+      exit 1
+    fi
+    ;;
+
+  *)
+    echo "Usage: $0 {start|stop|status}"
+    exit 1
+    ;;
+esac
+
+```
+
+### ⚠️ 關鍵檔案 (偵測到風險): skills\continuous-learning-v2\agents\observer.md
+```python
+---
+name: observer
+description: Background agent that analyzes session observations to detect patterns and create instincts. Uses Haiku for cost-efficiency.
+model: haiku
+run_mode: background
+---
+
+# Observer Agent
+
+A background agent that analyzes observations from Claude Code sessions to detect patterns and create instincts.
+
+## When to Run
+
+- After significant session activity (20+ tool calls)
+- When user runs `/analyze-patterns`
+- On a scheduled interval (configurable, default 5 minutes)
+- When triggered by observation hook (SIGUSR1)
+
+## Input
+
+Reads observations from `~/.claude/homunculus/observations.jsonl`:
+
+```jsonl
+{"timestamp":"2025-01-22T10:30:00Z","event":"tool_start","session":"abc123","tool":"Edit","input":"..."}
+{"timestamp":"2025-01-22T10:30:01Z","event":"tool_complete","session":"abc123","tool":"Edit","output":"..."}
+{"timestamp":"2025-01-22T10:30:05Z","event":"tool_start","session":"abc123","tool":"Bash","input":"npm test"}
+{"timestamp":"2025-01-22T10:30:10Z","event":"tool_complete","session":"abc123","tool":"Bash","output":"All tests pass"}
+```
+
+## Pattern Detection
+
+Look for these patterns in observations:
+
+### 1. User Corrections
+When a user's follow-up message corrects Claude's previous action:
+- "No, use X instead of Y"
+- "Actually, I meant..."
+- Immediate undo/redo patterns
+
+→ Create instinct: "When doing X, prefer Y"
+
+### 2. Error Resolutions
+When an error is followed by a fix:
+- Tool output contains error
+- Next few tool calls fix it
+- Same error type resolved similarly multiple times
+
+→ Create instinct: "When encountering error X, try Y"
+
+### 3. Repeated Workflows
+When the same sequence of tools is used multiple times:
+- Same tool sequence with similar inputs
+- File patterns that change together
+- Time-clustered operations
+
+→ Create workflow instinct: "When doing X, follow steps Y, Z, W"
+
+### 4. Tool Preferences
+When certain tools are consistently preferred:
+- Always uses Grep before Edit
+- Prefers Read over Bash cat
+- Uses specific Bash commands for certain tasks
+
+→ Create instinct: "When needing X, use tool Y"
+
+## Output
+
+Creates/updates instincts in `~/.claude/homunculus/instincts/personal/`:
+
+```yaml
+---
+id: prefer-grep-before-edit
+trigger: "when searching for code to modify"
+confidence: 0.65
+domain: "workflow"
+source: "session-observation"
+---
+
+# Prefer Grep Before Edit
+
+## Action
+Always use Grep to find the exact location before using Edit.
+
+## Evidence
+- Observed 8 times in session abc123
+- Pattern: Grep → Read → Edit sequence
+- Last observed: 2025-01-22
+```
+
+## Confidence Calculation
+
+Initial confidence based on observation frequency:
+- 1-2 observations: 0.3 (tentative)
+- 3-5 observations: 0.5 (moderate)
+- 6-10 observations: 0.7 (strong)
+- 11+ observations: 0.85 (very strong)
+
+Confidence adjusts over time:
+- +0.05 for each confirming observation
+- -0.1 for each contradicting observation
+- -0.02 per week without observation (decay)
+
+## Important Guidelines
+
+1. **Be Conservative**: Only create instincts for clear patterns (3+ observations)
+2. **Be Specific**: Narrow triggers are better than broad ones
+3. **Track Evidence**: Always include what observations led to the instinct
+4. **Respect Privacy**: Never include actual code snippets, only patterns
+5. **Merge Similar**: If a new instinct is similar to existing, update rather than duplicate
+
+## Example Analysis Session
+
+Given observations:
+```jsonl
+{"event":"tool_start","tool":"Grep","input":"pattern: useState"}
+{"event":"tool_complete","tool":"Grep","output":"Found in 3 files"}
+{"event":"tool_start","tool":"Read","input":"src/hooks/useAuth.ts"}
+{"event":"tool_complete","tool":"Read","output":"[file content]"}
+{"event":"tool_start","tool":"Edit","input":"src/hooks/useAuth.ts..."}
+```
+
+Analysis:
+- Detected workflow: Grep → Read → Edit
+- Frequency: Seen 5 times this session
+- Create instinct:
+  - trigger: "when modifying code"
+  - action: "Search with Grep, confirm with Read, then Edit"
+  - confidence: 0.6
+  - domain: "workflow"
+
+## Integration with Skill Creator
+
+When instincts are imported from Skill Creator (repo analysis), they have:
+- `source: "repo-analysis"`
+- `source_repo: "https://github.com/..."`
+
+These should be treated as team/project conventions with higher initial confidence (0.7+).
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。

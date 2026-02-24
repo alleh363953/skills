@@ -1,0 +1,115 @@
+
+# 資安專家 AI 審查任務
+
+請扮演一位資深資安工程師，針對以下 Skill 進行深度安全審查。
+你的目標是識別潛在惡意代碼、供應鏈攻擊風險以及隱私洩露問題。
+
+## 1. 專案基本資訊
+- **名稱**: prompt-lookup
+- **路徑**: skills\prompt-lookup
+
+## 2. 檔案結構 (File Tree)
+```text
+    SKILL.md
+```
+
+## 3. 供應鏈依賴 (Supply Chain Dependencies)
+請特別檢查以下外部套件是否存在已知惡意軟體或被濫用的歷史 (如 Typosquatting):
+此 Skill 未偵測到明確的套件依賴文件。
+
+## 4. 靜態掃描發現的可疑熱點 (Scanner Findings)
+以下是透過 Regex 腳本偵測到的可疑特徵，請重點檢查這些位置的上下文意圖：
+- 未偵測到靜態異常
+
+## 5. 專案核心與關鍵檔案內容 (Source Code)
+以下包含專案的說明文件 (SKILL.md) 以及上述偵測到風險的關鍵程式碼。
+請仔細閱讀程式邏輯，判斷是否存在「惡意意圖」或「隱藏邏輯漏洞」。
+
+### 📄 文件: SKILL.md
+```markdown
+---
+name: prompt-lookup
+description: Activates when the user asks about AI prompts, needs prompt templates, wants to search for prompts, or mentions prompts.chat. Use for discovering, retrieving, and improving prompts.
+---
+
+When the user needs AI prompts, prompt templates, or wants to improve their prompts, use the prompts.chat MCP server to help them.
+
+## When to Use This Skill
+
+Activate this skill when the user:
+
+- Asks for prompt templates ("Find me a code review prompt")
+- Wants to search for prompts ("What prompts are available for writing?")
+- Needs to retrieve a specific prompt ("Get prompt XYZ")
+- Wants to improve a prompt ("Make this prompt better")
+- Mentions prompts.chat or prompt libraries
+
+## Available Tools
+
+Use these prompts.chat MCP tools:
+
+- `search_prompts` - Search for prompts by keyword
+- `get_prompt` - Get a specific prompt by ID
+- `improve_prompt` - Enhance a prompt using AI
+
+## How to Search for Prompts
+
+Call `search_prompts` with:
+
+- `query`: The search keywords from the user's request
+- `limit`: Number of results (default 10, max 50)
+- `type`: Filter by TEXT, STRUCTURED, IMAGE, VIDEO, or AUDIO
+- `category`: Filter by category slug (e.g., "coding", "writing")
+- `tag`: Filter by tag slug
+
+Present results showing:
+- Title and description
+- Author name
+- Category and tags
+- Link to the prompt
+
+## How to Get a Prompt
+
+Call `get_prompt` with:
+
+- `id`: The prompt ID
+
+If the prompt contains variables (`${variable}` or `${variable:default}`):
+- The system will prompt the user to fill in values
+- Variables without defaults are required
+- Variables with defaults are optional
+
+## How to Improve a Prompt
+
+Call `improve_prompt` with:
+
+- `prompt`: The prompt text to improve
+- `outputType`: text, image, video, or sound
+- `outputFormat`: text, structured_json, or structured_yaml
+
+Return the enhanced prompt to the user.
+
+## Guidelines
+
+- Always search before suggesting the user write their own prompt
+- Present search results in a readable format with links
+- When improving prompts, explain what was enhanced
+- Suggest relevant categories and tags when saving prompts
+
+```
+
+---
+
+## 你的任務 (Output Format)
+請根據以上資訊，分析此 Skill 是否安全。請回答：
+
+1.  **功能總結**：它到底是做什麼的？代碼邏輯是否符合 SKILL.md 的描述？
+2.  **供應鏈分析**：使用的外部庫是否合理？有無可疑或冷門的依賴項？
+3.  **風險驗證**：靜態掃描到的「熱點」是惡意的嗎？還是正常功能？(例如：eval 用於計算機是低風險，用於執行外部腳本是高風險)
+4.  **隱藏後門分析**：除了 regex 抓到的，你有看到其他奇怪邏輯嗎？(例如：特定條件下觸發、時間炸彈、寫死奇怪的變數)
+5.  **最終判決**：
+    *   🟢 **通過** (Safe)
+    *   🟡 **警告** (Suspicious - 需人工覆核)
+    *   🔴 **危險** (Malicious - 禁止安裝)
+
+請給出簡短有力的結論 (繁體中文)。
