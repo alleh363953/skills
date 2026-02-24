@@ -1,0 +1,21 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch",
+      "NotebookEdit",
+      "mcp__*"
+    ]
+  },
+  "autoUpdatesChannel": "latest",
+  "effortLevel": "medium"
+}
